@@ -1,0 +1,3481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spellbound - King's Realm</title>
+    <style>
+        body {
+            margin: 0;
+            background: #000000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #2cc7dc;
+            font-family: 'Georgia', serif;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #game-container {
+            position: relative;
+        }
+        canvas {
+            border: 4px solid #000000;
+            background: #33c0d0;
+            box-shadow: 0 0 40px rgba(154, 7, 7, 0.9);
+            cursor: crosshair;
+            display: block;
+            max-width: calc(100vw - 16px);
+            max-height: calc(100vh - 16px);
+            width: auto;
+            height: auto;
+        }
+        #community-panel {
+            position: absolute;
+            inset: 4px;
+            z-index: 2;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 150px 22px 22px;
+            background: rgba(9, 9, 14, 0.98);
+            color: #e2e8f0;
+            font-family: Georgia, serif;
+        }
+        #community-panel[hidden],
+        #community-auth-view[hidden],
+        #community-sidebar[hidden],
+        .community-section[hidden] {
+            display: none;
+        }
+        #community-auth-card {
+            width: min(100%, 900px);
+            padding: 22px;
+            border: 1px solid #4f936d;
+            background: #111318;
+        }
+        .community-header,
+        .community-section-header,
+        .community-auth-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .community-header {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+        }
+        .community-header h2,
+        .community-section h3 {
+            margin: 0;
+            color: #d4af37;
+        }
+        .community-header h2 {
+            font-size: 30px;
+        }
+        .community-header button,
+        .community-auth-actions button,
+        .community-section button {
+            border: 1px solid #d4af37;
+            background: #5c4033;
+            color: #fff;
+            padding: 9px 14px;
+            font: bold 14px Georgia, serif;
+            cursor: pointer;
+        }
+        .community-header button:hover,
+        .community-auth-actions button:hover,
+        .community-section button:hover {
+            background: #7a523e;
+        }
+        #community-auth-view {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+            align-items: end;
+            align-content: start;
+            align-self: start;
+            gap: 10px;
+        }
+        .community-field {
+            display: grid;
+            gap: 5px;
+            color: #cbd5e1;
+            font-size: 13px;
+        }
+        .community-field input,
+        .community-field textarea {
+            box-sizing: border-box;
+            width: 100%;
+            border: 1px solid #64748b;
+            background: #18181b;
+            color: #fff;
+            padding: 10px;
+            font: 15px Georgia, serif;
+        }
+        .community-field textarea {
+            min-height: 72px;
+            resize: vertical;
+        }
+        .community-remember {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            color: #cbd5e1;
+            font-size: 13px;
+        }
+        .community-remember input {
+            margin: 0;
+        }
+        .community-auth-actions {
+            align-self: end;
+        }
+        .community-auth-actions button {
+            white-space: nowrap;
+        }
+        #community-status {
+            grid-column: 1 / -1;
+            min-height: 18px;
+            margin: 0;
+            color: #fbbf24;
+            font-size: 13px;
+        }
+        #community-sidebar {
+            position: absolute;
+            inset: 4px;
+            z-index: 2;
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px;
+            box-sizing: border-box;
+            pointer-events: none;
+            color: #e2e8f0;
+            font-family: Georgia, serif;
+        }
+        .community-sidebar-column {
+            width: min(30%, 380px);
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: auto;
+        }
+        .community-sidebar-toggle {
+            align-self: flex-start;
+            border: 1px solid #d4af37;
+            background: #5c4033;
+            color: #fff;
+            padding: 8px 11px;
+            font: bold 13px Georgia, serif;
+            cursor: pointer;
+        }
+        .community-sidebar-toggle:hover {
+            background: #7a523e;
+        }
+        .community-section {
+            min-height: 0;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            border: 1px solid #4f936d;
+            background: rgba(17, 19, 24, 0.96);
+            padding: 10px;
+        }
+        .community-section h3 { font-size: 17px; }
+        .community-section-header small {
+            color: #94a3b8;
+            font-size: 10px;
+        }
+        .community-section form {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .community-section form button {
+            align-self: flex-end;
+        }
+        .community-entry-list {
+            min-height: 0;
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+        }
+        .community-entry {
+            padding: 10px;
+            background: #1e1b18;
+            border-left: 3px solid #4f936d;
+            overflow-wrap: anywhere;
+        }
+        .community-entry p {
+            margin: 0 0 7px;
+            white-space: pre-wrap;
+        }
+        .community-entry small {
+            color: #94a3b8;
+            font-size: 12px;
+        }
+        .leaderboard-entry {
+            display: grid;
+            grid-template-columns: 28px minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 8px;
+        }
+        .leaderboard-time {
+            color: #d4af37;
+            font-variant-numeric: tabular-nums;
+        }
+        .leaderboard-difficulties button {
+            border: 1px solid #d4af37;
+            background: #5c4033;
+            color: #fff;
+            font: bold 11px Georgia, serif;
+            cursor: pointer;
+        }
+        .leaderboard-difficulties {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 4px;
+        }
+        .leaderboard-difficulties button {
+            min-width: 0;
+            padding: 6px 2px;
+        }
+        .leaderboard-difficulties button[aria-pressed="true"] {
+            background: #166534;
+        }
+        #leaderboard-content {
+            min-height: 0;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+        #leaderboard-status,
+        .community-sign-in-prompt {
+            margin: 0;
+            color: #94a3b8;
+            font-size: 12px;
+        }
+        .community-section form[hidden],
+        .community-sign-in-prompt[hidden] {
+            display: none;
+        }
+        .community-section .community-field {
+            font-size: 12px;
+        }
+        .community-section .community-field textarea {
+            min-height: 52px;
+            padding: 7px;
+            font-size: 13px;
+        }
+        .community-section form button {
+            padding: 7px 10px;
+            font-size: 12px;
+        }
+        @media (max-width: 700px) {
+            #community-panel {
+                padding: 90px 12px 12px;
+            }
+            #community-auth-card {
+                padding: 12px;
+            }
+            #community-auth-view {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            .community-auth-actions {
+                grid-column: 1 / -1;
+            }
+            #community-sidebar {
+                padding: 6px;
+                gap: 6px;
+            }
+            .community-sidebar-column { width: 36%; }
+            .community-sidebar-toggle { padding: 6px; font-size: 11px; }
+            .community-section {
+                padding: 6px;
+                gap: 6px;
+            }
+            .community-header h2 { font-size: 22px; }
+            .community-section h3 { font-size: 13px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <canvas id="gameCanvas" width="1520" height="850"></canvas>
+        <section id="community-panel" aria-label="Account" hidden>
+            <div id="community-auth-card">
+                <header class="community-header">
+                    <h2>Spellbound Account</h2>
+                    <button id="community-close" type="button">Back to Game</button>
+                    <p id="community-status" role="status" aria-live="polite">
+                        Sign in or create an account to view the community.
+                    </p>
+                </header>
+                <form id="community-auth-view" autocomplete="off">
+                    <label class="community-field">
+                        Username (for new accounts)
+                        <input id="community-username" type="text" minlength="3" maxlength="20"
+                            pattern="[A-Za-z0-9_]{3,20}" autocomplete="off" placeholder="RoyalMage_7">
+                    </label>
+                    <label class="community-field">
+                        Email
+                        <input id="community-email" type="email" autocomplete="off" required>
+                    </label>
+                    <label class="community-field">
+                        Password
+                        <input id="community-password" type="password" minlength="8"
+                            autocomplete="off" required>
+                    </label>
+                    <label class="community-remember">
+                        <input id="community-remember-me" type="checkbox">
+                        Remember me on this device
+                    </label>
+                    <div class="community-auth-actions">
+                        <button id="community-sign-in" type="submit">Sign In</button>
+                        <button id="community-sign-up" type="button">Create Account</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+        <div id="community-sidebar" aria-label="Community" hidden>
+            <div class="community-sidebar-column">
+                <button id="leaderboard-toggle" class="community-sidebar-toggle" type="button"
+                    aria-expanded="true" aria-controls="leaderboard-section">Hide Leaderboard</button>
+                <section id="leaderboard-section" class="community-section" aria-label="Rounds mode leaderboard">
+                    <div class="community-section-header">
+                        <h3>Rounds Leaderboard</h3>
+                    </div>
+                    <div id="leaderboard-content">
+                        <div class="leaderboard-difficulties" aria-label="Leaderboard difficulty">
+                            <button type="button" data-leaderboard-difficulty="easy"
+                                aria-pressed="false">Easy</button>
+                            <button type="button" data-leaderboard-difficulty="normal"
+                                aria-pressed="true">Normal</button>
+                            <button type="button" data-leaderboard-difficulty="hard"
+                                aria-pressed="false">Hard</button>
+                            <button type="button" data-leaderboard-difficulty="extreme"
+                                aria-pressed="false">Extreme</button>
+                            <button type="button" data-leaderboard-difficulty="impossible"
+                                aria-pressed="false">Impossible</button>
+                        </div>
+                        <p id="leaderboard-status" role="status" aria-live="polite">Loading scores...</p>
+                        <div id="leaderboard-list" class="community-entry-list" aria-live="polite"></div>
+                    </div>
+                </section>
+            </div>
+            <div class="community-sidebar-column">
+                <button id="community-posts-toggle" class="community-sidebar-toggle"
+                    type="button" aria-expanded="true" aria-controls="community-posts-section">
+                    Hide Posts
+                </button>
+                <section id="community-posts-section" class="community-section" aria-label="Community posts">
+                    <div class="community-section-header">
+                        <h3>Community Posts</h3>
+                        <small id="community-account"></small>
+                    </div>
+                    <p id="community-posts-sign-in" class="community-entry community-sign-in-prompt" hidden>
+                        Sign in to browse and publish community posts.
+                    </p>
+                    <form id="community-post-form">
+                        <label class="community-field">
+                            Share with the community
+                            <textarea id="community-post-input" maxlength="1000" required
+                                placeholder="Write a post (up to 1,000 characters)"></textarea>
+                        </label>
+                        <button type="submit">Publish Post</button>
+                    </form>
+                    <div id="community-post-list" class="community-entry-list" aria-live="polite"></div>
+                </section>
+                <button id="community-chat-toggle" class="community-sidebar-toggle"
+                    type="button" aria-expanded="true" aria-controls="community-chat-section">
+                    Hide Chat
+                </button>
+                <section id="community-chat-section" class="community-section" aria-label="Community chat">
+                    <div class="community-section-header">
+                        <h3>Live Chat</h3>
+                    </div>
+                    <div id="community-chat-list" class="community-entry-list" aria-live="polite"></div>
+                    <p id="community-chat-sign-in" class="community-entry community-sign-in-prompt" hidden>
+                        Sign in to read and send live chat messages.
+                    </p>
+                    <form id="community-chat-form">
+                        <label class="community-field">
+                            Message
+                            <textarea id="community-chat-input" maxlength="500" required
+                                placeholder="Say hello (up to 500 characters)"></textarea>
+                        </label>
+                        <button type="submit">Send Message</button>
+                    </form>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const initialMapWidth = canvas.width;
+        const initialMapHeight = canvas.height;
+        const mapExpansionFactor = 1.25;
+        let mapExpansionLevel = 0;
+
+        async function toggleFullscreen() {
+            try {
+                if (document.fullscreenElement) {
+                    await document.exitFullscreen();
+                } else {
+                    await document.documentElement.requestFullscreen();
+                }
+            } catch (error) {
+                console.error("Unable to toggle fullscreen mode.", error);
+            }
+        }
+
+        let gameState = 'MENU'; // 'MENU', 'CONTROLS', 'DIFFICULTY', 'AUDIO', 'PLAYING', 'PAUSED', 'INTERMISSION', 'SKILLTREE', 'MILESTONE_REWARD', 'GAMEOVER', 'VICTORY'
+        let runElapsedMs = 0;
+        let runTimerActive = false;
+        let selectedLeaderboardDifficulty = "normal";
+        let communityOpen = false;
+        let difficulty = 'normal';
+        let gameMode = 'Rounds';
+        let arcadeElapsedMs = 0;
+        let arcadeSpawnTimerMs = 0;
+        let milestoneRewardClaimed = false;
+        let milestoneRewardResumeState = 'PLAYING';
+        let sidekickUnlocked = false;
+        const projectileShieldDurationMs = 60 * 1000;
+        const enemyContactDamageIntervalMs = 1000;
+        const enemyKillGoldRewards = {
+            footman: 100,
+            juggernaut: 50,
+            warMachine: 110,
+            siege: 125,
+            catapult: 115,
+            berserker: 150,
+            crossbow: 125,
+            archer: 75,
+            scout: 50,
+            knight: 150,
+            gasser: 200,
+            smurf: 250,
+            troll: 500,
+            alien: 750,
+            thanos: 1000,
+            ultron: 2500,
+            champion: 5000,
+            king: 10000
+        };
+        const enemyContactDamage = {
+            footman: 5,
+            juggernaut: 25,
+            warMachine: 10,
+            siege: 5,
+            catapult: 10,
+            berserker: 25,
+            crossbow: 10,
+            archer: 5,
+            scout: 2,
+            knight: 50,
+            gasser: 25,
+            smurf: 25,
+            troll:25,
+            alien: 75,
+            thanos: 75,
+            ultron: 100,
+            champion: 200,
+            king: 1000,
+         };
+        let projectileShieldRemainingMs = 0;
+        const spellBurstDelayMs = 120;
+        let pendingPlayerShots = [];
+        const arcadeKingIntervalMs = 6 * 60 * 1000;
+        const arcadeChampionIntervalMs = 3 * 60 * 1000;
+        let arcadeNextKingMs = arcadeKingIntervalMs;
+        let arcadeNextChampionMs = arcadeChampionIntervalMs;
+        let arcadeNextMilestoneRewardMs = arcadeChampionIntervalMs;
+        const difficultySettings = {
+            easy: { enemyHealth: 0.5, enemySpeed: 0.65, enemyDamage: 0.7, waveSize: 0.8, maxRounds: 10 },
+            normal: { enemyHealth: 1, enemySpeed: 1, enemyDamage: 1, waveSize: 1, maxRounds: 20 },
+            hard: { enemyHealth: 2, enemySpeed: 2, enemyDamage: 2, waveSize: 2, maxRounds: 40 },
+            extreme: { enemyHealth: 3, enemySpeed: 3, enemyDamage: 3, waveSize: 3, maxRounds: 60 },
+            impossible: { enemyHealth: 4, enemySpeed: 3, enemyDamage: 7, waveSize: 4, maxRounds: 100 }
+        };
+        let showBuildModal = false;
+        let intermissionFrames = 30 * 60;
+        let waitingForKeyRebind = null;
+
+        const controlDefinitions = [
+            { key: 'up', label: "Move Up", defaultKey: 'w' },
+            { key: 'left', label: "Move Left", defaultKey: 'a' },
+            { key: 'down', label: "Move Down", defaultKey: 's' },
+            { key: 'right', label: "Move Right", defaultKey: 'd' },
+            { key: 'spell1', label: "Spell 1 (Fire)", defaultKey: '1' },
+            { key: 'spell2', label: "Spell 2 (Frost)", defaultKey: '2' },
+            { key: 'spell3', label: "Spell 3 (Bolt)", defaultKey: '3' },
+            { key: 'spell4', label: "Spell 4 (Arcane)", defaultKey: '4' },
+            { key: 'spell5', label: "Spell 5 (Doom)", defaultKey: '5' },
+            { key: 'pause', label: "Pause / Play", defaultKey: 'p' },
+            { key: 'build', label: "Build Menu", defaultKey: 'b' },
+            { key: 'skilltree', label: "Skill Tree", defaultKey: 't' },
+            { key: 'fullscreen', label: "Toggle Fullscreen", defaultKey: 'f' }
+        ];
+        let keybinds = Object.fromEntries(controlDefinitions.map(({ key, defaultKey }) => [key, defaultKey]));
+        let keybindsRevision = 0;
+        let keybindSaveTimer = null;
+        let keybindSavePromise = Promise.resolve();
+
+        const keys = {};
+        const mouse = { x: 0, y: 0, down: false, clicked: false };
+        function getCanvasPosition(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: (clientX - rect.left) * canvas.width / rect.width,
+                y: (clientY - rect.top) * canvas.height / rect.height
+            };
+        }
+        let placementClick = false;
+        let skillTreeScrollY = 0;
+        let skillTreeScrollDragging = false;
+        let skillTreeScrollDragOffset = 0;
+        let controlsScrollY = 0;
+        let controlsScrollDragging = false;
+        let controlsScrollDragOffset = 0;
+        let controlsReturnState = 'MENU';
+        let audioReturnState = 'MENU';
+
+        let musicContext = null;
+        let musicMaster = null;
+        let soundEffectsMaster = null;
+        let musicTimer = null;
+        let musicMode = null;
+        let musicStep = 0;
+        let musicEnabled = true;
+        let soundEffectsEnabled = true;
+        let musicVolume = 0.70;
+        let soundEffectsVolume = 0.70;
+        const musicNoteDurationMultiplier = 1.0; // Increase this value to sustain music notes longer.
+        const supabaseUrl = "https://fzlizzhrpfhzmimqrxpd.supabase.co";
+        const supabaseAnonKey = "sb_publishable_KSfChlgp-1rkC1sly5fXzQ_U2E7R10g";
+        const communityRememberPreferenceKey = "spellbound-community-remember";
+        let communityClient = null;
+        let communityClientPromise = null;
+        let communityClientRememberDevice = false;
+        let communityInitializationPromise = null;
+        let communityChannel = null;
+        let communityUser = null;
+        const musicTracks = {
+            menu: [
+                { tempo: 360, wave: "triangle", volume: 0.04,
+                  notes: [220,261.63,329.63,440,392,329.63,261.63,246.94,220,220,246.94,261.63,329.63,293.66,261.63,246.94,196,0],                 bass: [110,98,87.31,82.41] }
+            ],
+            fight: [
+
+                { tempo: 240, wave: "square", volume: 0.035,
+                  notes: [233.08,233.08,277.18,233.08,311.13,277.18,233.08,207.65,233.08,349.23,311.13,277.18,233.08,207.65,185,207.65,0,],
+                  bass: [116.54,116.54,103.83,92.5] }
+            ],
+            boss: [
+                { tempo: 185, wave: "sawtooth", volume: 0.045,
+                  notes: [174.61,174.61,207.65,174.61,261.63,246.94,207.65,196,174.61,174.61,233.08,207.65,277.18,261.63,233.08,207.65,0],
+                  bass: [87.31,87.31,82.41,77.78] }
+            ],
+            victory: [
+                { tempo: 240, wave: "triangle", volume: 0.05,
+                  notes: [261.63,329.63,392,523.25,493.88,392,329.63,261.63,293.66,369.99,440,587.33,523.25,440,392,329.63,0],
+                  bass: [130.81,146.83,164.81,196] }
+            ],
+            defeat: [
+                { tempo: 320, wave: "triangle", volume: 0.045,
+                  notes: [196,185,174.61,164.81,155.56,146.83,130.81,116.54,130.81,116.54,110,98,110,98,87.31,82.41,0],
+                  bass: [98,92.5,87.31,82.41] }
+            ]
+        };
+
+        function ensureMusicStarted() {
+            if (!musicContext) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContextClass) return;
+                musicContext = new AudioContextClass();
+                musicMaster = musicContext.createGain();
+                musicMaster.gain.value = musicVolume;
+                musicMaster.connect(musicContext.destination);
+                soundEffectsMaster = musicContext.createGain();
+                soundEffectsMaster.gain.value = soundEffectsVolume;
+                soundEffectsMaster.connect(musicContext.destination);
+            }
+            if (musicContext.state === "suspended") musicContext.resume();
+        }
+
+        function playSoundEffect(frequency = 440, duration = 0.08, volume = 0.08, wave = "sine") {
+            if (!soundEffectsEnabled) return;
+            ensureMusicStarted();
+            if (!musicContext || !soundEffectsMaster) return;
+            scheduleMusicNote(frequency, duration, volume, wave, "effects");
+        }
+
+        function scheduleMusicNote(frequency, duration, volume, wave, bus = "music") {
+            const destination = bus === "effects" ? soundEffectsMaster : musicMaster;
+            if (!musicContext || !destination) return;
+
+            const start = musicContext.currentTime;
+            const oscillator = musicContext.createOscillator();
+            const gain = musicContext.createGain();
+            oscillator.type = wave;
+            oscillator.frequency.value = frequency;
+            gain.gain.setValueAtTime(0.0001, start);
+            gain.gain.exponentialRampToValueAtTime(volume, start + 0.015);
+            gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+            oscillator.connect(gain);
+            gain.connect(destination);
+            oscillator.start(start);
+            oscillator.stop(start + duration + 0.02);
+        }
+
+        function startMusicTrack(mode) {
+            if (!musicEnabled) return;
+
+            const tracks = musicTracks[mode] || musicTracks.menu;
+            const track = tracks[0];
+            const musicDuration = (duration) => duration * musicNoteDurationMultiplier;
+            musicStep = 0;
+            if (musicTimer) clearInterval(musicTimer);
+
+            const playStep = () => {
+                if (!musicContext) return;
+                const note = track.notes[musicStep % track.notes.length];
+                scheduleMusicNote(note, musicDuration(Math.min(track.tempo / 1000 * 0.72, 0.22)), track.volume, track.wave);
+
+                if (musicStep % 4 === 0) {
+                    const bassIndex = Math.floor(musicStep / 4) % track.bass.length;
+                    scheduleMusicNote(track.bass[bassIndex],
+                        musicDuration(track.tempo / 1000 * 1.8), track.volume * 0.9,
+                        mode === "boss" ? "triangle" : "triangle");
+                }
+
+                if (mode === "menu") {
+                    if (musicStep % 4 === 0) {
+                        scheduleMusicNote(note * 2, musicDuration(track.tempo / 1000 * 1.4),
+                            track.volume * 0.55, "sine");
+                    }
+                    if (musicStep % 8 === 6) {
+                        scheduleMusicNote(note * 1.5, musicDuration(track.tempo / 1000 * 0.9),
+                            track.volume * 0.45, "sine");
+                    }
+                } else if (mode === "fight") {
+                    if (musicStep % 2 === 0) {
+                        scheduleMusicNote(note * 1.5, musicDuration(track.tempo / 1000 * 0.28),
+                            track.volume * 0.35, "square");
+                    }
+                    if (musicStep % 4 === 1) {
+                        scheduleMusicNote(41.2, 0.08, track.volume * 0.8, "sawtooth");
+                    }
+                } else if (mode === "boss") {
+                    if (musicStep % 2 === 0) {
+                        scheduleMusicNote(note * 2, musicDuration(track.tempo / 1000 * 0.38),
+                            track.volume * 0.38, "triangle");
+                    }
+                    if (musicStep % 8 === 7) {
+                        scheduleMusicNote(track.bass[Math.floor(musicStep / 8) % track.bass.length] * 2,
+                            musicDuration(track.tempo / 1000 * 1.2), track.volume * 0.55, "square");
+                    }
+                } else if (mode === "victory") {
+                    if (musicStep % 4 === 2) {
+                        scheduleMusicNote(note * 2, musicDuration(track.tempo / 1000 * 1.2),
+                            track.volume * 0.5, "sine");
+                    }
+                } else if (mode === "defeat") {
+                    if (musicStep % 4 === 3) {
+                        scheduleMusicNote(note * 0.5, musicDuration(track.tempo / 1000 * 1.4),
+                            track.volume * 0.45, "triangle");
+                    }
+                }
+                musicStep++;
+
+                if (musicStep >= track.notes.length) {
+                    clearInterval(musicTimer);
+                    musicTimer = null;
+                    startMusicTrack(mode);
+                }
+            };
+
+            playStep();
+            musicTimer = setInterval(playStep, track.tempo);
+            if (musicContext.state === "suspended") {
+                musicContext.resume();
+            }
+        }
+
+        function setMusicMode(mode) {
+            ensureMusicStarted();
+            if (!musicEnabled) {
+                if (musicTimer) clearInterval(musicTimer);
+                musicTimer = null;
+                musicMode = null;
+                return;
+            }
+            if (musicMode === mode) return;
+            musicMode = mode;
+            startMusicTrack(mode);
+        }
+
+        function getActiveMusicMode() {
+            const gameplayStates = new Set(["PLAYING", "PAUSED", "INTERMISSION", "SKILLTREE", "MILESTONE_REWARD"]);
+            if (gameState === "VICTORY") return "victory";
+            if (gameState === "GAMEOVER") return "defeat";
+            if (gameState === "AUDIO") {
+                if (audioReturnState === "PAUSED") {
+                    if (enemies.some(enemy => enemy.model === "king" || enemy.model === "champion")) return "boss";
+                    return "fight";
+                }
+                return "menu";
+            }
+            if (gameplayStates.has(gameState) &&
+                enemies.some(enemy => enemy.model === "king" || enemy.model === "champion")) {
+                return "boss";
+            }
+            if (gameplayStates.has(gameState)) return "fight";
+            return "menu";
+        }
+
+        function updateMusic() {
+            setMusicMode(getActiveMusicMode());
+        }
+
+        function setCommunityStatus(message) {
+            document.getElementById("community-status").textContent = message;
+        }
+
+        function setLeaderboardStatus(message) {
+            document.getElementById("leaderboard-status").textContent = message;
+        }
+
+        function formatElapsedTime(milliseconds) {
+            const centiseconds = Math.floor(milliseconds / 10);
+            const totalSeconds = Math.floor(centiseconds / 100);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            const fraction = centiseconds % 100;
+            return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(fraction).padStart(2, "0")}`;
+        }
+
+        function isLeaderboardRun() {
+            return gameMode === "Rounds";
+        }
+
+        async function loadLeaderboard(leaderboardDifficulty = selectedLeaderboardDifficulty) {
+            const client = await getCommunityClient();
+            const { data, error } = await client
+                .from("normal_mode_leaderboard")
+                .select("username, best_time_ms")
+                .eq("difficulty", leaderboardDifficulty)
+                .order("best_time_ms", { ascending: true })
+                .order("updated_at", { ascending: true })
+                .limit(10);
+            if (error) throw error;
+            if (leaderboardDifficulty !== selectedLeaderboardDifficulty) return;
+
+            const list = document.getElementById("leaderboard-list");
+            list.replaceChildren();
+            if (!data?.length) {
+                const emptyMessage = document.createElement("p");
+                emptyMessage.textContent = "No victories recorded yet.";
+                list.appendChild(emptyMessage);
+            } else {
+                data.forEach((entry, index) => {
+                    const row = document.createElement("article");
+                    row.className = "community-entry leaderboard-entry";
+
+                    const rank = document.createElement("strong");
+                    rank.textContent = `${index + 1}.`;
+                    const username = document.createElement("span");
+                    username.textContent = entry.username;
+                    const time = document.createElement("strong");
+                    time.className = "leaderboard-time";
+                    time.textContent = formatElapsedTime(Number(entry.best_time_ms));
+
+                    row.append(rank, username, time);
+                    list.appendChild(row);
+                });
+            }
+            const difficultyLabel = leaderboardDifficulty[0].toUpperCase() + leaderboardDifficulty.slice(1);
+            setLeaderboardStatus(communityUser
+                ? `Personal bests · ${difficultyLabel} difficulty`
+                : "Sign in before a victory to submit your time.");
+        }
+
+        function setLeaderboardDifficulty(leaderboardDifficulty) {
+            selectedLeaderboardDifficulty = leaderboardDifficulty;
+            document.querySelectorAll("[data-leaderboard-difficulty]").forEach((button) => {
+                button.setAttribute(
+                    "aria-pressed",
+                    String(button.dataset.leaderboardDifficulty === leaderboardDifficulty)
+                );
+            });
+        }
+
+        function selectLeaderboardDifficulty(leaderboardDifficulty) {
+            setLeaderboardDifficulty(leaderboardDifficulty);
+            loadLeaderboard(leaderboardDifficulty).catch(showLeaderboardError);
+        }
+
+        function showLeaderboardError(error) {
+            console.error("Leaderboard request failed.", error);
+            setLeaderboardStatus(`Leaderboard error: ${error.message || "Unable to load scores."}`);
+        }
+
+        async function submitLeaderboardTime(completionTimeMs, runDifficulty) {
+            if (communityInitializationPromise) {
+                await communityInitializationPromise;
+            } else if (!communityClient) {
+                await initializeCommunity();
+            }
+            if (!communityUser) {
+                setLeaderboardStatus("Sign in before a victory to submit your time.");
+                return;
+            }
+
+            const client = await getCommunityClient();
+            const userId = communityUser.id;
+            const { data: existing, error: lookupError } = await client
+                .from("normal_mode_leaderboard")
+                .select("best_time_ms")
+                .eq("user_id", userId)
+                .eq("difficulty", runDifficulty)
+                .maybeSingle();
+            if (lookupError) throw lookupError;
+            if (existing && Number(existing.best_time_ms) <= completionTimeMs) {
+                setLeaderboardStatus("Your existing leaderboard time is faster.");
+                return;
+            }
+
+            const username = String(
+                communityUser.user_metadata?.username || communityUser.email?.split("@")[0] || "Player"
+            ).slice(0, 30);
+            setLeaderboardStatus("Saving your victory time...");
+            const { error } = await client.from("normal_mode_leaderboard").upsert({
+                user_id: userId,
+                difficulty: runDifficulty,
+                username,
+                best_time_ms: completionTimeMs,
+                updated_at: new Date().toISOString()
+            }, { onConflict: "user_id,difficulty" });
+            if (error) throw error;
+
+            setLeaderboardDifficulty(runDifficulty);
+            await loadLeaderboard(runDifficulty);
+            setLeaderboardStatus("Your personal best was saved.");
+        }
+
+        function showCommunityError(error) {
+            console.error("Community feature failed.", error);
+            setCommunityStatus(`Community error: ${error.message || "Unable to complete that action."}`);
+        }
+
+        function resetKeybinds() {
+            keybinds = Object.fromEntries(controlDefinitions.map(({ key, defaultKey }) => [key, defaultKey]));
+        }
+
+        async function loadPlayerControls(userId, revision) {
+            const client = await getCommunityClient();
+            const { data, error } = await client
+                .from("player_settings")
+                .select("controls")
+                .eq("user_id", userId)
+                .maybeSingle();
+            if (error) throw error;
+            if (communityUser?.id !== userId || keybindsRevision !== revision || !data?.controls) return;
+
+            keybinds = Object.fromEntries(controlDefinitions.map(({ key, defaultKey }) => {
+                const savedKey = data.controls[key];
+                return [key, typeof savedKey === "string" && savedKey.length > 0 ? savedKey : defaultKey];
+            }));
+        }
+
+        async function savePlayerControls(userId, controls) {
+            const client = await getCommunityClient();
+            if (communityUser?.id !== userId) return;
+            const { error } = await client.from("player_settings").upsert({
+                user_id: userId,
+                controls
+            }, { onConflict: "user_id" });
+            if (error) throw error;
+        }
+
+        function schedulePlayerControlsSave() {
+            if (!communityUser) return;
+            clearTimeout(keybindSaveTimer);
+            const userId = communityUser.id;
+            const controls = { ...keybinds };
+            keybindSaveTimer = setTimeout(() => {
+                keybindSaveTimer = null;
+                keybindSavePromise = keybindSavePromise
+                    .then(() => savePlayerControls(userId, controls))
+                    .catch(showCommunityError);
+            }, 250);
+        }
+
+        async function getCommunityClient(rememberDevice =
+            localStorage.getItem(communityRememberPreferenceKey) === "true") {
+            if (supabaseUrl.includes("YOUR_PROJECT_ID") ||
+                supabaseAnonKey.includes("YOUR_SUPABASE_ANON_KEY")) {
+                throw new Error("Set the Supabase project URL and anon key in game.html, then run supabase-schema.sql.");
+            }
+            if (communityClientPromise && communityClientRememberDevice !== rememberDevice) {
+                await communityClientPromise;
+            }
+            if (communityClient && communityClientRememberDevice !== rememberDevice) {
+                communityClient = null;
+                communityClientPromise = null;
+            }
+            if (communityClient) return communityClient;
+            if (!communityClientPromise) {
+                communityClientRememberDevice = rememberDevice;
+                communityClientPromise = (async () => {
+                    if (!window.supabase?.createClient) {
+                        await new Promise((resolve, reject) => {
+                            const script = document.createElement("script");
+                            script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js";
+                            script.onload = resolve;
+                            script.onerror = () => reject(new Error("Could not load the Supabase client library."));
+                            document.head.appendChild(script);
+                        });
+                    }
+                    if (!window.supabase?.createClient) {
+                        throw new Error("The Supabase client library did not initialize.");
+                    }
+                    communityClient = window.supabase.createClient(supabaseUrl, supabaseAnonKey, {
+                        auth: {
+                            storage: rememberDevice ? window.localStorage : window.sessionStorage
+                        }
+                    });
+                    communityClient.auth.onAuthStateChange((_event, session) => {
+                        window.setTimeout(() => setCommunityUser(session?.user || null), 0);
+                    });
+                    return communityClient;
+                })().catch((error) => {
+                    communityClientPromise = null;
+                    throw error;
+                });
+            }
+            return communityClientPromise;
+        }
+
+        function initializeCommunity() {
+            if (communityInitializationPromise) return communityInitializationPromise;
+            setCommunityStatus("Connecting to the community...");
+            communityInitializationPromise = (async () => {
+                try {
+                    const client = await getCommunityClient();
+                    const { data, error } = await client.auth.getSession();
+                    if (error) throw error;
+                    setCommunityUser(data.session?.user || null);
+                    loadLeaderboard().catch(showLeaderboardError);
+                } catch (error) {
+                    showCommunityError(error);
+                    showLeaderboardError(error);
+                } finally {
+                    communityInitializationPromise = null;
+                }
+            })();
+            return communityInitializationPromise;
+        }
+
+        const communityRememberCheckbox = document.getElementById("community-remember-me");
+        communityRememberCheckbox.checked =
+            localStorage.getItem(communityRememberPreferenceKey) === "true";
+        communityRememberCheckbox.addEventListener("change", () => {
+            localStorage.setItem(communityRememberPreferenceKey, String(communityRememberCheckbox.checked));
+        });
+
+        function setCommunityUser(user) {
+            const userChanged = communityUser?.id !== user?.id;
+            communityUser = user;
+            if (userChanged) {
+                clearTimeout(keybindSaveTimer);
+                keybindSaveTimer = null;
+                keybindsRevision++;
+                resetKeybinds();
+                if (user) loadPlayerControls(user.id, keybindsRevision).catch(showCommunityError);
+            }
+            document.getElementById("community-auth-view").hidden = Boolean(user);
+            if (!user) {
+                document.getElementById("community-auth-view").reset();
+                document.getElementById("community-post-form").reset();
+                document.getElementById("community-chat-form").reset();
+                document.getElementById("community-account").textContent = "";
+                document.getElementById("community-post-form").hidden = true;
+                document.getElementById("community-post-list").hidden = true;
+                document.getElementById("community-posts-sign-in").hidden = false;
+                document.getElementById("community-chat-form").hidden = true;
+                document.getElementById("community-chat-list").hidden = true;
+                document.getElementById("community-chat-sign-in").hidden = false;
+                setCommunityStatus("Sign in or create an account to join the community.");
+                if (communityChannel && communityClient) {
+                    communityClient.removeChannel(communityChannel);
+                    communityChannel = null;
+                }
+                document.getElementById("community-post-list").replaceChildren();
+                document.getElementById("community-chat-list").replaceChildren();
+                setCommunitySectionVisibility("community-posts-toggle", "community-posts-section", true);
+                setCommunitySectionVisibility("community-chat-toggle", "community-chat-section", true);
+                syncCommunitySidebar();
+                return;
+            }
+
+            const username = user.user_metadata?.username || user.email || "Community member";
+            document.getElementById("community-post-form").hidden = false;
+            document.getElementById("community-post-list").hidden = false;
+            document.getElementById("community-posts-sign-in").hidden = true;
+            document.getElementById("community-chat-form").hidden = false;
+            document.getElementById("community-chat-list").hidden = false;
+            document.getElementById("community-chat-sign-in").hidden = true;
+            document.getElementById("community-account").textContent = `Signed in as ${username}`;
+            setCommunityStatus(`Welcome, ${username}.`);
+            if (communityOpen) closeCommunity();
+            syncCommunitySidebar();
+            if (!userChanged) return;
+            connectCommunityFeed();
+            loadCommunityContent().catch(showCommunityError);
+        }
+
+        function connectCommunityFeed() {
+            if (!communityClient || communityChannel) return;
+            communityChannel = communityClient.channel("spellbound-community-feed")
+                .on("postgres_changes", {
+                    event: "INSERT",
+                    schema: "public",
+                    table: "community_posts"
+                }, () => loadCommunityPosts().catch(showCommunityError))
+                .on("postgres_changes", {
+                    event: "INSERT",
+                    schema: "public",
+                    table: "community_messages"
+                }, () => loadCommunityMessages().catch(showCommunityError))
+                .subscribe((status) => {
+                    if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+                        setCommunityStatus(`Live updates unavailable (${status}). Refresh the page to retry.`);
+                    }
+                });
+        }
+
+        async function loadCommunityPosts() {
+            const userId = communityUser?.id;
+            if (!userId) return;
+            const { data, error } = await communityClient
+                .from("community_posts")
+                .select("id, body, created_at, profiles!community_posts_user_id_fkey(username)")
+                .order("created_at", { ascending: false })
+                .limit(100);
+            if (error) throw error;
+            if (communityUser?.id !== userId) return;
+            renderCommunityEntries("community-post-list", data);
+        }
+
+        async function loadCommunityMessages() {
+            const userId = communityUser?.id;
+            if (!userId) return;
+            const { data, error } = await communityClient
+                .from("community_messages")
+                .select("id, body, created_at, profiles!community_messages_user_id_fkey(username)")
+                .order("created_at", { ascending: false })
+                .limit(100);
+            if (error) throw error;
+            if (communityUser?.id !== userId) return;
+            renderCommunityEntries("community-chat-list", data.reverse());
+        }
+
+        async function loadCommunityContent() {
+            await Promise.all([loadCommunityPosts(), loadCommunityMessages()]);
+        }
+
+        function renderCommunityEntries(containerId, entries) {
+            const container = document.getElementById(containerId);
+            container.replaceChildren();
+            if (!entries.length) {
+                const emptyMessage = document.createElement("p");
+                emptyMessage.textContent = "Nothing here yet. Start the conversation!";
+                container.appendChild(emptyMessage);
+                return;
+            }
+            entries.forEach((entry) => {
+                const card = document.createElement("article");
+                card.className = "community-entry";
+                const body = document.createElement("p");
+                body.textContent = entry.body;
+                const details = document.createElement("small");
+                details.textContent = `${entry.profiles?.username || "Community member"} · ${new Date(entry.created_at).toLocaleString()}`;
+                card.append(body, details);
+                container.appendChild(card);
+            });
+            if (containerId === "community-chat-list") {
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+
+        function handleAccountButton() {
+            if (communityUser) {
+                signOutCommunity();
+                return;
+            }
+            communityOpen = true;
+            document.getElementById("community-panel").hidden = false;
+            initializeCommunity();
+        }
+
+        function closeCommunity() {
+            communityOpen = false;
+            document.getElementById("community-panel").hidden = true;
+        }
+
+        function syncCommunitySidebar() {
+            document.getElementById("community-sidebar").hidden =
+                gameState !== "MENU" || communityOpen;
+        }
+
+        function setCommunitySectionVisibility(toggleId, sectionId, visible) {
+            const toggle = document.getElementById(toggleId);
+            document.getElementById(sectionId).hidden = !visible;
+            toggle.setAttribute("aria-expanded", String(visible));
+            toggle.textContent = visible
+                ? (sectionId === "community-posts-section" ? "Hide Posts" : "Hide Chat")
+                : (sectionId === "community-posts-section" ? "Show Posts" : "Show Chat");
+        }
+
+        function toggleCommunitySection(toggleId, sectionId) {
+            const toggle = document.getElementById(toggleId);
+            setCommunitySectionVisibility(toggleId, sectionId, toggle.getAttribute("aria-expanded") !== "true");
+        }
+
+        async function signOutCommunity() {
+            try {
+                const { error } = await communityClient.auth.signOut();
+                if (error) throw error;
+                setCommunityUser(null);
+                setCommunityStatus("Signed out.");
+            } catch (error) {
+                showCommunityError(error);
+                communityOpen = true;
+                document.getElementById("community-panel").hidden = false;
+            }
+        }
+
+        document.getElementById("community-close").addEventListener("click", closeCommunity);
+        document.getElementById("community-posts-toggle").addEventListener("click", () => {
+            toggleCommunitySection("community-posts-toggle", "community-posts-section");
+        });
+        document.getElementById("community-chat-toggle").addEventListener("click", () => {
+            toggleCommunitySection("community-chat-toggle", "community-chat-section");
+        });
+        document.querySelectorAll("[data-leaderboard-difficulty]").forEach((button) => {
+            button.addEventListener("click", () => {
+                selectLeaderboardDifficulty(button.dataset.leaderboardDifficulty);
+            });
+        });
+        document.getElementById("leaderboard-toggle").addEventListener("click", (event) => {
+            const toggle = event.currentTarget;
+            const expanded = toggle.getAttribute("aria-expanded") !== "true";
+            document.getElementById("leaderboard-section").hidden = !expanded;
+            toggle.setAttribute("aria-expanded", String(expanded));
+            toggle.textContent = expanded ? "Hide Leaderboard" : "Show Leaderboard";
+        });
+        document.getElementById("community-auth-view").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            try {
+                const client = await getCommunityClient(communityRememberCheckbox.checked);
+                const email = document.getElementById("community-email").value.trim();
+                const password = document.getElementById("community-password").value;
+                const { data, error } = await client.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+                setCommunityUser(data.user);
+                setCommunityStatus("Signed in successfully.");
+            } catch (error) {
+                showCommunityError(error);
+            }
+        });
+        document.getElementById("community-sign-up").addEventListener("click", async () => {
+            try {
+                const username = document.getElementById("community-username").value.trim();
+                if (!/^[A-Za-z0-9_]{3,20}$/.test(username)) {
+                    throw new Error("Choose a 3-20 character username using letters, numbers, or underscores.");
+                }
+                const client = await getCommunityClient(communityRememberCheckbox.checked);
+                const email = document.getElementById("community-email").value.trim();
+                const password = document.getElementById("community-password").value;
+                if (password.length < 8) throw new Error("Use a password with at least 8 characters.");
+                const { data, error } = await client.auth.signUp({
+                    email,
+                    password,
+                    options: { data: { username } }
+                });
+                if (error) throw error;
+                if (!data.session) {
+                    setCommunityStatus("Account created. Check your email to confirm it, then sign in.");
+                } else {
+                    setCommunityUser(data.user);
+                    setCommunityStatus(`Welcome, ${username}.`);
+                }
+            } catch (error) {
+                showCommunityError(error);
+            }
+        });
+        document.getElementById("community-post-form").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const body = document.getElementById("community-post-input").value.trim();
+            if (!body) {
+                setCommunityStatus("Posts cannot be empty.");
+                return;
+            }
+            try {
+                const { error } = await communityClient.from("community_posts").insert({
+                    user_id: communityUser.id,
+                    body
+                });
+                if (error) throw error;
+                event.currentTarget.reset();
+                setCommunityStatus("Post published.");
+                await loadCommunityPosts();
+            } catch (error) {
+                showCommunityError(error);
+            }
+        });
+        document.getElementById("community-chat-form").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const body = document.getElementById("community-chat-input").value.trim();
+            if (!body) {
+                setCommunityStatus("Messages cannot be empty.");
+                return;
+            }
+            try {
+                const { error } = await communityClient.from("community_messages").insert({
+                    user_id: communityUser.id,
+                    body
+                });
+                if (error) throw error;
+                event.currentTarget.reset();
+                setCommunityStatus("Message sent.");
+                await loadCommunityMessages();
+            } catch (error) {
+                showCommunityError(error);
+            }
+        });
+
+        window.addEventListener("pointerdown", ensureMusicStarted, { passive: true });
+        window.addEventListener("keydown", ensureMusicStarted);
+        const skillTierSettings = {
+            1: { name: "TIER 1", unlockCost: 0 },
+            2: { name: "TIER 2", unlockCost: 10000 },
+            3: { name: "TIER 3", unlockCost: 30000 }
+        };
+        let unlockedSkillTiers = { 1: true, 2: false, 3: false };
+        let selectedSkillTier = 1;
+        let skillTreeReturnState = 'PLAYING';
+
+        function isTextEntryTarget(target) {
+            return target instanceof HTMLElement &&
+                (target.isContentEditable || target.matches("input, textarea, select"));
+        }
+
+        window.addEventListener("keydown", (e) => {
+            if (isTextEntryTarget(e.target) && e.key !== "Escape") return;
+            let keyLower = e.key.toLowerCase();
+
+            if (e.key === "Escape") {
+                if (waitingForKeyRebind === 'fullscreen') {
+                    keybinds.fullscreen = keyLower;
+                    keybindsRevision++;
+                    schedulePlayerControlsSave();
+                    waitingForKeyRebind = null;
+                } else if (waitingForKeyRebind) {
+                    waitingForKeyRebind = null;
+                } else if (communityOpen) {
+                    closeCommunity();
+                } else if (gameState === 'CONTROLS') {
+                    gameState = controlsReturnState;
+                } else if (gameState === 'AUDIO') {
+                    gameState = audioReturnState;
+                } else if (keybinds.fullscreen === keyLower && !document.fullscreenElement) {
+                    toggleFullscreen();
+                }
+                return;
+            }
+
+            if (waitingForKeyRebind) {
+                keybinds[waitingForKeyRebind] = keyLower;
+                keybindsRevision++;
+                schedulePlayerControlsSave();
+                waitingForKeyRebind = null;
+                return;
+            }
+
+            if (keyLower === keybinds.fullscreen) {
+                toggleFullscreen();
+            } else if (keyLower === keybinds.pause && (gameState === 'PLAYING' || gameState === 'PAUSED')) {
+                togglePause();
+            } else if (keyLower === keybinds.build && (gameState === 'PLAYING' || gameState === 'INTERMISSION')) {
+                showBuildModal = !showBuildModal;
+            } else if (keyLower === keybinds.skilltree && (gameState === 'PLAYING' || gameState === 'INTERMISSION')) {
+                openSkillShop();
+            }
+
+            keys[keyLower] = true;
+        });
+
+        window.addEventListener("keyup", (e) => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        canvas.addEventListener("mousemove", (e) => {
+            const position = getCanvasPosition(e.clientX, e.clientY);
+            mouse.x = position.x;
+            mouse.y = position.y;
+            if (skillTreeScrollDragging && mouse.down) {
+                const layout = getSkillTreeLayout();
+                const thumbRange = layout.track.height - layout.thumbHeight;
+                const thumbY = Math.max(layout.track.y, Math.min(layout.track.y + thumbRange, mouse.y - skillTreeScrollDragOffset));
+                skillTreeScrollY = thumbRange > 0
+                    ? ((thumbY - layout.track.y) / thumbRange) * layout.maxScroll
+                    : 0;
+            }
+            if (controlsScrollDragging && mouse.down) {
+                const layout = getControlsMenuLayout();
+                const thumbRange = layout.track.height - layout.thumbHeight;
+                const thumbY = Math.max(layout.track.y, Math.min(
+                    layout.track.y + thumbRange,
+                    mouse.y - controlsScrollDragOffset
+                ));
+                controlsScrollY = thumbRange > 0
+                    ? ((thumbY - layout.track.y) / thumbRange) * layout.maxScroll
+                    : 0;
+            }
+        });
+        canvas.addEventListener("mousedown", (e) => {
+            const position = getCanvasPosition(e.clientX, e.clientY);
+            mouse.x = position.x;
+            mouse.y = position.y;
+            mouse.down = true;
+            mouse.clicked = true;
+            placementClick = Boolean(selectedDefenseType && !showBuildModal);
+            if (gameState === 'SKILLTREE') {
+                const layout = getSkillTreeLayout();
+                if (mouse.x >= layout.track.x && mouse.x <= layout.track.x + layout.track.width &&
+                    mouse.y >= layout.thumbY && mouse.y <= layout.thumbY + layout.thumbHeight) {
+                    skillTreeScrollDragging = true;
+                    skillTreeScrollDragOffset = mouse.y - layout.thumbY;
+                } else if (mouse.x >= layout.track.x && mouse.x <= layout.track.x + layout.track.width &&
+                    mouse.y >= layout.track.y && mouse.y <= layout.track.y + layout.track.height) {
+                    const thumbRange = layout.track.height - layout.thumbHeight;
+                    skillTreeScrollY = thumbRange > 0
+                        ? layout.maxScroll * Math.max(0, Math.min(1,
+                            (mouse.y - layout.track.y - layout.thumbHeight / 2) / thumbRange))
+                        : 0;
+                }
+            }
+            if (gameState === 'CONTROLS') {
+                const layout = getControlsMenuLayout();
+                if (layout.maxScroll > 0 &&
+                    mouse.x >= layout.track.x && mouse.x <= layout.track.x + layout.track.width &&
+                    mouse.y >= layout.thumbY && mouse.y <= layout.thumbY + layout.thumbHeight) {
+                    controlsScrollDragging = true;
+                    controlsScrollDragOffset = mouse.y - layout.thumbY;
+                } else if (layout.maxScroll > 0 &&
+                    mouse.x >= layout.track.x && mouse.x <= layout.track.x + layout.track.width &&
+                    mouse.y >= layout.track.y && mouse.y <= layout.track.y + layout.track.height) {
+                    const thumbRange = layout.track.height - layout.thumbHeight;
+                    controlsScrollY = thumbRange > 0
+                        ? layout.maxScroll * Math.max(0, Math.min(1,
+                            (mouse.y - layout.track.y - layout.thumbHeight / 2) / thumbRange))
+                        : 0;
+                }
+            }
+        });
+
+        canvas.addEventListener("mouseup", () => {
+            mouse.down = false;
+            skillTreeScrollDragging = false;
+            controlsScrollDragging = false;
+        });
+        window.addEventListener("mouseup", () => {
+            mouse.down = false;
+            skillTreeScrollDragging = false;
+            controlsScrollDragging = false;
+        });
+        canvas.addEventListener("wheel", (e) => {
+            if (gameState !== 'SKILLTREE' && gameState !== 'CONTROLS') return;
+            const position = getCanvasPosition(e.clientX, e.clientY);
+            const x = position.x;
+            const y = position.y;
+            if (gameState === 'CONTROLS') {
+                const layout = getControlsMenuLayout();
+                if (x >= layout.viewport.x && x <= layout.viewport.x + layout.viewport.width &&
+                    y >= layout.viewport.y && y <= layout.viewport.y + layout.viewport.height) {
+                    e.preventDefault();
+                    controlsScrollY = Math.max(0, Math.min(layout.maxScroll, controlsScrollY + e.deltaY));
+                }
+                return;
+            }
+            const layout = getSkillTreeLayout();
+            if (x >= layout.viewport.x && x <= layout.viewport.x + layout.viewport.width &&
+                y >= layout.viewport.y && y <= layout.viewport.y + layout.viewport.height) {
+                e.preventDefault();
+                skillTreeScrollY = Math.max(0, Math.min(layout.maxScroll, skillTreeScrollY + e.deltaY));
+            }
+        }, { passive: false });
+
+        let player = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 18,
+            speed: 4.0,
+            hp: 100,
+            maxHp: 100,
+            mana: 100,
+            maxMana: 100,
+            gold: 3000,
+            skills: {
+                // Add new skill entries here with tier: 2 or tier: 3 to place them in those tiers.
+                health: { rank: 0, maxRank: Infinity, baseCost: 100, mult: 1.4, name: "Potion of Healing", desc: "+5 HP", effects: { heal: 5 } },
+                spellDamage: { rank: 0, maxRank: 5, baseCost: 2500, mult: 1.5, name: "Aprentice March", desc: "+50% Spell Dmg", effects: { spellDamage: 0.5, spellDamageRank: 1 } },
+                spellSpeed: { rank: 0, maxRank: 4, baseCost: 110, mult: 1.3, name: "Royal Swiftness", desc: "+10% Spell Speed", effects: { spellSpeed: 0.1 } },
+                spellBurst: { rank: 0, maxRank: 2, baseCost: 1500, mult: 1.4, name: "Royal Surge", desc: "+1 spell per shot per rank", effects: { burstShots: 1 } },
+                manaCapacity: { rank: 0, maxRank: 5, baseCost: 165, mult: 1.4, name: "Gandalf's wisdom", desc: "+25 Max Mana", effects: { maxMana: 25 } },
+                manaRegen: { rank: 0, maxRank: 3, baseCost: 2010, mult: 1.3, name: "Crown's Focus", desc: "+0.15 Mana/frame per rank", effects: { manaRegen: 0.15 } },
+                healthRegen: { rank: 0, maxRank: 6, baseCost: 3080, mult: 1.4, name: "Royal Resilience", desc: "+0.5 HP/sec per rank", effects: { healthRegen: 0.5 } },
+                maxHp: { rank: 0, maxRank: 5, baseCost: 155, mult: 1.4, name: "Royal Vitality", desc: "+25 Max HP", effects: { maxHp: 25 } },
+                speed: { rank: 0, maxRank: 3, baseCost: 95, mult: 1.4, name: "Royal Stride", desc: "+Movement Speed", effects: { movementSpeed: 0.3 } },
+                damageReduction: { rank: 0, maxRank: 5, baseCost: 230, mult: 1.5, name: "Royal Guard", desc: "-10% incoming damage per rank", effects: { damageReduction: 0.1 } },
+                towerRange: { rank: 0, maxRank: 3, baseCost: 70, mult: 1.4, name: "Scout Farsight", desc: "+40 Structure Range", effects: { towerRange: 40 } },
+                towerSpeed: { rank: 0, maxRank: 3, baseCost: 100, mult: 1.4, name: "Arrow Efficiency", desc: "+20% Structure Attack Speed", effects: { towerSpeed: 0.2 } },
+                towerDamage: { rank: 0, maxRank: 4, baseCost: 120, mult: 1.4, name: "Ballistics", desc: "+20% Structure Dmg", effects: { towerDamage: 0.2 } },
+                crystalBonus: { rank: 0, maxRank: 5, baseCost: 135, mult: 1.4, name: "Royal Tribute", desc: "+15 Gold/Kill", effects: { goldPerKill: 15 } },
+                bankInterest: { rank: 0, maxRank: 3, baseCost: 100, mult: 1.5, name: "Imperial Vaults", desc: "+10% Treasury Yield", effects: { bankInterest: 0.1 } },
+                piercing: { rank: 0, maxRank: 3, baseCost: 210, mult: 1.4, name: "Royal Precision", desc: "Pass through 1 enemy; doubles per rank", effects: { piercingRank: 1 } },
+                royalGrant: { rank: 0, maxRank: 5, baseCost: 300, mult: 1.5, name: "Royal Grant", desc: "+500 Gold immediately", effects: { gold: 500 } },
+                healingDraught: { rank: 0, maxRank: 5, baseCost: 250, mult: 1.4, name: "Healing Draught", desc: "Restore +25 HP", effects: { heal: 25 } },
+                manaFlow: { rank: 0, maxRank: 4, baseCost: 350, mult: 1.4, name: "Mana Flow", desc: "+0.25 Mana/frame", effects: { manaRegen: 0.25 } },
+                spellFocus: { rank: 0, maxRank: 4, baseCost: 500, mult: 1.5, name: "Spell Focus", desc: "+15% Spell Dmg", effects: { spellDamage: 0.15 } },
+                sturdyBastion: { rank: 0, maxRank: 3, baseCost: 450, mult: 1.5, name: "Sturdy Bastion", desc: "-5% incoming damage", effects: { damageReduction: 0.05 } },
+
+                manaCapacityII: { tier: 2, rank: 0, maxRank: 3, baseCost: 5895, mult: 1.4, name: "Master Oogway", desc: "+50 Max Mana per rank", effects: { maxMana: 50 } },
+                manaRegenII: { tier: 2, rank: 0, maxRank: 4, baseCost: 3000, mult: 1.4, name: "More Mana", desc: "+0.5 mana/frame per rank", effects : { manaRegen: 0.5} },
+                spellDamageII: { tier: 2, rank: 0, maxRank: 3, baseCost: 3500, mult: 1.5, name: "Greater Spell Power", desc: "+50% Spell Dmg per rank", effects: { spellDamage: 0.5, spellDamageRank: 1 } },
+                healthRegenII: { tier: 2, rank: 0, maxRank: 3, baseCost: 911, mult: 1.4, name: "Herb Gatherer", desc: "+2.5 HP/sec per rank", effects: { healthRegen: 2.5 } },
+                maxHpII: { tier: 2, rank: 0, maxRank: 4, baseCost: 875, mult: 1.4, name: "Vitality of Dragons", desc: "+75 Max HP per rank", effects: { maxHp: 50 } },
+                damageReductionII: { tier: 2, rank: 0, maxRank: 5, baseCost: 2000, mult: 1.5, name: "Chancellor's Durability", desc: "-20% incoming damage per rank", effects: { damageReduction: 0.2 } },
+                towerDamageII: { tier: 2, rank: 0, maxRank: 5, baseCost: 1250, mult: 1.4, name: "Imperial Efficiency", desc: "+40% Structure Dmg per rank", effects: { towerDamage: 0.4 } },
+                bankInterestII: { tier: 2, rank: 0, maxRank: 5, baseCost: 2150, mult: 1.4, name: "Royal Treasury", desc: "+15% Treasury Yield per rank", effects: { bankInterest: 0.15 } },
+                crystalBonusII: { tier: 2, rank: 0, maxRank: 3, baseCost: 2875, mult: 1.4, name: "Imperial Compensation", desc: "+50 Gold/Kill per rank", effects: { goldPerKill: 50 } },
+                royalReserveII: { tier: 2, rank: 0, maxRank: 5, baseCost: 2500, mult: 1.5, name: "Royal Reserve", desc: "+5,000 Gold immediately", effects: { gold: 5000 } },
+                healingWaveII: { tier: 2, rank: 0, maxRank: 4, baseCost: 1800, mult: 1.4, name: "Healing Wave", desc: "Restore +75 HP", effects: { heal: 75 } },
+                spellHasteII: { tier: 2, rank: 0, maxRank: 4, baseCost: 3200, mult: 1.5, name: "Arcane Haste", desc: "+20% Spell Speed", effects: { spellSpeed: 0.2 } },
+                piercingII: { tier: 2, rank: 0, maxRank: 3, baseCost: 4000, mult: 1.5, name: "Royal Penetration", desc: "Pass through 1 more enemy", effects: { piercingRank: 1 } },
+                wardingII: { tier: 2, rank: 0, maxRank: 4, baseCost: 3500, mult: 1.5, name: "Dragon Ward", desc: "-10% incoming damage", effects: { damageReduction: 0.1 } },
+
+                spellDamageIII: { tier: 3, rank: 0, maxRank: 3, baseCost: 5500, mult: 1.5, name: "Supreme Spell Power", desc: "+50% Spell Dmg per rank", effects: { spellDamage: 0.5, spellDamageRank: 1 } },
+                healthRegenIII: { tier: 3, rank: 0, maxRank: 4, baseCost: 6875, mult: 1.4, name: "Elixir of Life", desc: "+5 HP/sec per rank", effects: { healthRegen: 5 } },
+                maxHpIII: { tier: 3, rank: 0, maxRank: 2, baseCost: 4300, mult: 1.4, name: "Enderance Over All", desc: "+100 Max HP per rank", effects: { maxHp: 75 } },
+                damageReductionIII: { tier: 3, rank: 0, maxRank: 4, baseCost: 6400, mult: 1.5, name: "Kings Will", desc: "-25% damage per rank", effects: { damageReduction: 0.25 } },
+                towerDamageIII: { tier: 3, rank: 0, maxRank: 5, baseCost: 2900, mult: 1.4, name: "Absolute Overtake", desc: "+45% Structure Dmg per rank", effects: { towerDamage: 0.45 } },
+                crystalBonusIII: { tier: 3, rank: 0, maxRank: 4, baseCost: 5875, mult: 1.4, name: "Noble Warranty", desc: "+100 Gold/Kill per rank", effects: { goldPerKill: 100 } },
+                bankInterestIII: { tier: 3, rank: 0, maxRank: 3, baseCost: 4875, mult: 1.4, name: "Royal Treasury II", desc: "+20% Treasury Yield per rank", effects: { bankInterest: 0.2 }},
+                royalFortuneIII: { tier: 3, rank: 0, maxRank: 5, baseCost: 6000, mult: 1.5, name: "Royal Fortune", desc: "+10,000 Gold immediately", effects: { gold: 10000 } },
+                phoenixHeartIII: { tier: 3, rank: 0, maxRank: 4, baseCost: 6500, mult: 1.4, name: "Phoenix Heart", desc: "+200 Max HP", effects: { maxHp: 200 } },
+                arcaneReservoirIII: { tier: 3, rank: 0, maxRank: 4, baseCost: 7000, mult: 1.4, name: "Arcane Reservoir", desc: "+100 Max Mana", effects: { maxMana: 100 } },
+                spellFlurryIII: { tier: 3, rank: 0, maxRank: 3, baseCost: 8500, mult: 1.5, name: "Spell Flurry", desc: "+1 spell per shot", effects: { burstShots: 1 } },
+                royalCommandIII: { tier: 3, rank: 0, maxRank: 3, baseCost: 7500, mult: 1.5, name: "Royal Command", desc: "+0.5 Movement Speed", effects: { movementSpeed: 0.5 } },
+            }
+        };
+
+        function getSkillTreeLayout() {
+            const modalW = 1000, modalH = 640;
+            const mx = (canvas.width - modalW) / 2, my = (canvas.height - modalH) / 2;
+            const viewport = { x: mx + 25, y: my + 145, width: modalW - 50, height: 415 };
+            const rowHeight = 112;
+            const contentHeight = Math.max(rowHeight,
+                Math.ceil(getSkillsForTier(selectedSkillTier).length / 2) * rowHeight - 12);
+            const maxScroll = Math.max(0, contentHeight - viewport.height);
+            const track = { x: mx + modalW - 25, y: viewport.y, width: 10, height: viewport.height };
+            const thumbHeight = Math.min(track.height, Math.max(36, track.height * viewport.height / contentHeight));
+            const thumbY = track.y + (maxScroll > 0
+                ? (skillTreeScrollY / maxScroll) * (track.height - thumbHeight)
+                : 0);
+            return { mx, my, modalW, modalH, viewport, rowHeight, contentHeight, maxScroll, track, thumbHeight, thumbY };
+        }
+        const spells = {
+            1: { name: "Royal Fireball", color: "#ff4500", speed: 7, radius: 9, baseDamage: 55, manaCost: 8, cooldown: 250 },
+            2: { name: "Frost Shard", color: "#38bdf8", speed: 10, radius: 6, baseDamage: 25, manaCost: 10, cooldown: 120 },
+            3: { name: "Royal Bolt", color: "#facc15", speed: 16, radius: 5, baseDamage: 100, manaCost: 20, cooldown: 500 },
+            4: { name: "Arcane Surge", color: "#a855f7", speed: 20, radius: 10, baseDamage: 90, manaCost: 25, cooldown: 400 },
+            5: { name: "Doom" ,color: "000000", speed:1, radius: 100, baseDamage: 500, manaCost: 100, cooldown:  12000}
+        };
+        let currentSpellKey = "1";
+        let lastShotTime = 0;
+        let currentRound = 1;
+        let maxRounds = 20;
+        let enemiesRemainingInWave = 0;
+        let kingSpawnedThisWave = false;
+        let championSpawnedThisWave = false;
+        let waveTimer = 0;
+        let waveActive = true;
+        let score = 0;
+        let animTimer = 0;
+
+        let projectiles = [];
+        let gasClouds = [];
+        let healthOranges = [];
+        let enemies = [];
+        let particles = [];
+        let defenses = [];
+
+        let selectedDefenseType = null;
+        // Change these values to adjust the maximum number of each tower.
+        const defenseLimits = { bushes: 20, archers: 5, bank: 20, catapult: 4, gas: 2 };
+        const defenseCosts = { bushes: 25, archers: 60, bank: 80, catapult: 130, gas: 160 };
+        defenseCosts.bushes += 50;
+        defenseCosts.archers += 50;
+        defenseCosts.bank += 50;
+        defenseCosts.catapult += 50;
+        defenseCosts.gas += 50;
+
+        function getDefenseCount(type) {
+            return defenses.filter(defense => defense.type === type && !defense.broken).length;
+        }
+
+        const arcadeEnemyVariants = [
+            { hp: 55, maxHp: 55, speed: 1.2, radius: 15, color: "#dc2626", type: "Rival Footman", model: "footman" },
+            // Red
+            { hp: 500, maxHp: 500, speed: 0.3, radius: 36, color: "#1e293b", type: "Rival Juggernaut", model: "juggernaut" },
+            // Very dark desaturated blue.
+            { hp: 400, maxHp: 400, speed: 0.4, radius: 32, color: "#4b5563", type: "Rival War Machine", model: "warMachine" },
+            // Very dark grayish blue.
+            { hp: 300, maxHp: 300, speed: 0.5, radius: 30, color: "#1e40af", type: "Rival Siege Engine", model: "siege" },
+            // Dark blue
+            { hp: 250, maxHp: 250, speed: 0.6, radius: 26, color: "#1e3a8a", type: "Rival Catapult", model: "catapult" },
+            // Dark blue
+            { hp: 200, maxHp: 200, speed: 1.0, radius: 20, color: "#b91c1c", type: "Rival Berserker", model: "berserker" },
+            // Strong red
+            { hp: 120, maxHp: 120, speed: 1.4, radius: 18, color: "#15803d", type: "Rival Crossbowman", model: "crossbow" },
+            // lime green
+            { hp: 80, maxHp: 80, speed: 1.5, radius: 14, color: "#047857", type: "Rival Archer", model: "archer" },
+            // Dark cyan
+            { hp: 40, maxHp: 40, speed: 1.8, radius: 12, color: "#ea580c", type: "Rival Scout", model: "scout" },
+            // vivid orange
+            { hp: 150, maxHp: 150, speed: 0.8, radius: 22, color: "#7f1d1d", type: "Rival Knight", model: "knight" },
+            // Dark red
+            { hp: 300, maxHp: 300, speed: 1.1, radius: 25, color: "#b2e43a", type: "Rival Gasser", model: "gasser" },
+            // vivid green
+            { hp: 400, maxHp: 400, speed: 2, radius: 10, color: "#12bff3", type: "Rival Smurf", model: "smurf" },
+            // vivid cyan
+            { hp: 1000, maxHp: 1000, speed: 2, radius: 20, color: "#513c3a", type: "Rival Troll", model: "troll" },
+            // Very dark grayish red
+            { hp: 2500, maxHp: 2500, speed: 2, radius: 24, color: "#32f64f", type: "Rival Alien", model: "alien" },
+            // Bright lime green
+            { hp: 3000, maxHp: 3000, speed: 1, radius: 40, color: "#7625c9", type: "Rival Thanos", model: "thanos" },
+            // Strong violet
+            { hp: 5000, maxHp: 5000, speed: 2, radius: 34, color: "#636363", type: "Rival Ultron", model: "ultron" },
+
+            { hp: 10000, maxHp: 10000, speed: 1.2, radius: 42, color: "#1e289d", type: "Rival Champion", model: "champion" },
+            // Dark blue
+        ];
+        // Arcade spawn chance weights are relative; increase a value to make that enemy more common.
+        const arcadeEnemySpawnChances = {
+            footman: 30,
+            // fast, small, and weak 30
+            juggernaut: 20,
+            // slow, big, and impact deal 100 damage 20
+            warMachine: 20,
+            // slow, big, and shots deal 60 damage 20
+            siege: 20,
+            // slow big, and shots deal 28 damage 20
+            catapult: 20,
+            // slow big, and shots deal 22 damage 20
+            berserker: 15,
+            // fast, medium size, and deals 1.25 contact damage 15
+            crossbow: 20,
+            // fast, medium size, and shots deal 14 damage 20
+            archer: 20,
+            // fast, small, and shots deal 8 damage 20
+            scout: 40,
+            // very fast, small, and weak 40
+            knight: 40,
+            // medium speed, medium size, and medium health 40
+            gasser: 10,
+            // medium speed, medium size, and gas cloud deals 1.2 damage per second 10
+            smurf: 20,
+            // very fast, small, and 400 health 20
+            troll: 5,
+
+            alien: 5,
+
+            thanos: 5,
+
+            ultron: 1,
+
+            champion: 0,
+            // big, medium speed, and medium health
+        };
+
+        function getRandomArcadeEnemyVariant() {
+            const weightedVariants = arcadeEnemyVariants.map(variant => ({
+                variant,
+                chance: arcadeEnemySpawnChances[variant.model]
+            }));
+            if (weightedVariants.some(entry => !Number.isFinite(entry.chance) || entry.chance < 0)) {
+                throw new Error("Arcade enemy spawn chances must be finite, non-negative numbers.");
+            }
+
+            const totalChance = weightedVariants.reduce((total, entry) => total + entry.chance, 0);
+            if (totalChance <= 0) {
+                throw new Error("At least one Arcade enemy spawn chance must be greater than zero.");
+            }
+
+            let roll = Math.random() * totalChance;
+            for (const entry of weightedVariants) {
+                roll -= entry.chance;
+                if (roll < 0) return entry.variant;
+            }
+            throw new Error("Could not select an Arcade enemy variant from the configured chances.");
+        }
+
+        function getSkillCost(skillObj) {
+            return Math.floor(skillObj.baseCost * Math.pow(skillObj.mult, skillObj.rank));
+        }
+
+        function getSkillEffect(effectName) {
+            return Object.values(player.skills).reduce((total, skill) => {
+                return total + (skill.effects?.[effectName] || 0) * skill.rank;
+            }, 0);
+        }
+
+        function getSkillsForTier(tier) {
+            return Object.entries(player.skills)
+                .filter(([, skill]) => (skill.tier || 1) === tier);
+        }
+
+        function selectSkillTier(tier) {
+            const settings = skillTierSettings[tier];
+            if (unlockedSkillTiers[tier]) {
+                selectedSkillTier = tier;
+                skillTreeScrollY = 0;
+                return;
+            }
+
+            if (player.gold < settings.unlockCost) return;
+
+            player.gold -= settings.unlockCost;
+            unlockedSkillTiers[tier] = true;
+            selectedSkillTier = tier;
+            skillTreeScrollY = 0;
+        }
+
+        function togglePause() {
+            if (gameState === 'PLAYING') gameState = 'PAUSED';
+            else if (gameState === 'PAUSED') gameState = 'PLAYING';
+            showBuildModal = false;
+        }
+
+        function openControlsMenu(returnState) {
+            controlsReturnState = returnState;
+            controlsScrollY = 0;
+            waitingForKeyRebind = null;
+            gameState = 'CONTROLS';
+        }
+
+        function openAudioSettings(returnState) {
+            audioReturnState = returnState;
+            gameState = 'AUDIO';
+        }
+
+        function restartGame() {
+            startNewGame();
+        }
+
+        function openBuildMenu() {
+            if (gameState === 'PLAYING' || gameState === 'INTERMISSION') {
+                gameState = 'PAUSED';
+                showBuildModal = false;
+            }
+        }
+
+        function openSkillShop() {
+            if (gameState === 'PLAYING' || gameState === 'INTERMISSION') {
+                skillTreeReturnState = gameState;
+                gameState = 'SKILLTREE';
+                showBuildModal = false;
+            }
+        }
+
+        function closeSkillTree() {
+            gameState = skillTreeReturnState;
+        }
+
+        function spawnEnemyForRound() {
+            if (gameMode === 'arcade') {
+                const variant = getRandomArcadeEnemyVariant();
+                enemies.push(new RivalSoldier(variant));
+                return;
+            }
+
+            if (currentRound >= maxRounds && !kingSpawnedThisWave) {
+                kingSpawnedThisWave = true;
+                spawnKing();
+                return;
+            }
+
+            if (gameMode === 'Rounds' && currentRound % 10 === 0 && !championSpawnedThisWave) {
+                championSpawnedThisWave = true;
+                spawnChampion();
+                return;
+            }
+
+            let typeRand = Math.random();
+            const adventureMode = gameMode === 'adventure';
+            let enemyData = { hp: 55, maxHp: 55, speed: 1.2, radius: 15, color: "#dc2626", type: "Rival Footman", model: "footman" };
+
+            if ((adventureMode || currentRound >= 3) && Math.random() < 0.1) {
+                enemyData = { hp: 300, maxHp: 300, speed: 1.1, radius: 25, color: "#b2e43a", type: "Rival Gasser", model: "gasser" };
+            } else if ((adventureMode || currentRound >= 11) && typeRand > 0.88) {
+                enemyData = { hp: 1000, maxHp: 1000, speed: 1.2, radius: 25, color: "#513c3a", type: "Rival Troll", model: "troll" };
+            } else if ((adventureMode || currentRound >= 5) && typeRand > 0.85 &&
+                (adventureMode || currentRound < 6 || typeRand <= 0.88)) {
+                enemyData = { hp: 400, maxHp: 400, speed: 2, radius: 25, color: "#12bff3", type: "Rival Smurf", model: "smurf" };
+            } else if ((adventureMode || currentRound >= 15) && typeRand > 0.96) {
+                enemyData = { hp: 500, maxHp: 500, speed: 0.3, radius: 36, color: "#1e293b", type: "Rival Juggernaut", model: "juggernaut" };
+            } else if ((adventureMode || currentRound >= 10) && typeRand > 0.92 && (adventureMode || currentRound < 15 || typeRand <= 0.96)) {
+                enemyData = { hp: 400, maxHp: 400, speed: 0.4, radius: 32, color: "#4b5563", type: "Rival War Machine", model: "warMachine" };
+            } else if ((adventureMode || currentRound >= 6) && typeRand > 0.88 && (adventureMode || currentRound < 10 || typeRand <= 0.92)) {
+                enemyData = { hp: 300, maxHp: 300, speed: 0.5, radius: 30, color: "#1e40af", type: "Rival Siege Engine", model: "siege" };
+            } else if ((adventureMode || currentRound >= 4) && typeRand > 0.85 && (adventureMode || currentRound < 6 || typeRand <= 0.88)) {
+                enemyData = { hp: 250, maxHp: 250, speed: 0.6, radius: 26, color: "#1e3a8a", type: "Rival Catapult", model: "catapult" };
+            } else if ((adventureMode || currentRound >= 12) && typeRand >= 0.20 && typeRand < 0.25) {
+                enemyData = { hp: 200, maxHp: 200, speed: 1.0, radius: 20, color: "#b91c1c", type: "Rival Berserker", model: "berserker" };
+            } else if ((adventureMode || currentRound >= 8) && typeRand >= 0.15 && typeRand < 0.20) {
+                enemyData = { hp: 120, maxHp: 120, speed: 1.4, radius: 18, color: "#15803d", type: "Rival Crossbowman", model: "crossbow" };
+            } else if ((adventureMode || currentRound >= 5) && typeRand < 0.15) {
+                enemyData = { hp: 80, maxHp: 80, speed: 1.5, radius: 14, color: "#047857", type: "Rival Archer", model: "archer" };
+            } else if ((adventureMode || currentRound >= 2) && typeRand >= (adventureMode ? 0.25 : currentRound >= 12 ? 0.25 : currentRound >= 8 ? 0.20 : currentRound >= 5 ? 0.15 : 0) && typeRand < 0.35) {
+                enemyData = { hp: 40, maxHp: 40, speed: 1.8, radius: 12, color: "#ea580c", type: "Rival Scout", model: "scout" };
+            } else if ((adventureMode || currentRound >= 3) && typeRand > 0.65 && (adventureMode || currentRound < 4 || typeRand <= 0.85)) {
+                enemyData = { hp: 150, maxHp: 150, speed: 0.8, radius: 22, color: "#7f1d1d", type: "Rival Knight", model: "knight" };
+            } else if ((adventureMode || currentRound >= 12) && typeRand > 0.88) {
+                enemyData = { hp: 2500, maxHp: 2500, speed: 1.2, radius: 18, color: "#32f64f", type: "Rival Alien", model: "alien" };
+            } else if ((adventureMode || currentRound >= 5) && typeRand < 0.15) {
+                enemyData = { hp: 3000, maxHp: 3000, speed: 1, radius: 40, color: "#7625c9", type: "Rival Thanos", model: "thanos" };
+            } else if ((adventureMode || currentRound >= 15) && typeRand > 0.96) {
+                enemyData = { hp: 5000, maxHp: 5000, speed: 1, radius: 34, color: "#636363", type: "Rival Ultron", model: "ultron" };
+            }
+
+            enemies.push(new RivalSoldier(enemyData));
+        }
+
+        function spawnKing() {
+            enemies.push(new RivalSoldier({
+                hp: 30000, maxHp: 30000, speed: 0.55, radius: 28,
+                color: "#7e22ce", type: "Enemy King", model: "king"
+            }));
+        }
+
+        function spawnChampion() {
+            enemies.push(new RivalSoldier({
+                hp: 10000, maxHp: 10000, speed: 1.2, radius: 40,
+                color: "#1e289d", type: "Rival Champion", model: "champion"
+            }));
+        }
+
+        class RivalSoldier {
+            constructor(data) {
+                this.x = 0; this.y = 0;
+                const settings = difficultySettings[difficulty];
+                const roundStatMultiplier = gameMode === 'Rounds' ? 1 + (currentRound - 1) * 0.05 : 1;
+                this.hp = data.hp * settings.enemyHealth * roundStatMultiplier;
+                this.maxHp = data.maxHp * settings.enemyHealth * roundStatMultiplier;
+                this.speed = (data.speed + (currentRound * 0.05)) * settings.enemySpeed;
+                this.baseSpeed = this.speed;
+                this.radius = data.radius;
+                this.color = data.color;
+                this.type = data.type;
+                this.model = data.model;
+                this.enemySpawnTimerMs = 0;
+                this.lastShot = 0;
+                this.contactDamageTimerMs = 0;
+                this.contactDamage = (enemyContactDamage[this.model] ?? 0.5) *
+                    settings.enemyDamage * roundStatMultiplier;
+
+                if (Math.random() < 0.5) {
+                    this.x = Math.random() < 0.5 ? 0 : canvas.width;
+                    this.y = Math.random() * canvas.height;
+                } else {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() < 0.5 ? 0 : canvas.height;
+                }
+            }
+
+            update(deltaTime) {
+                this.speed = this.baseSpeed;
+
+                defenses.forEach(def => {
+                    let dist = Math.hypot(this.x - def.x, this.y - def.y);
+                    if (def.type === 'bushes' && dist < def.radius + this.radius) {
+                        this.speed = this.baseSpeed * 0.5;
+                        if (Math.random() < (2 / 60)) this.hp -= 2;
+                    } else if (def.type === 'bank' && dist < def.radius + this.radius) {
+                        if (!def.broken) {
+                            def.enemiesPassed++;
+                            if (def.enemiesPassed >= 2) def.broken = true;
+                        }
+                    }
+                });
+
+                const angle = Math.atan2(player.y - this.y, player.x - this.x);
+                const distanceToPlayer = Math.hypot(player.x - this.x, player.y - this.y);
+                const rangedStats = this.model === 'archer'
+                    ? { range: 300, cooldown: 1100, damage: 8, speed: 5, color: "#34d399" }
+                    : this.model === 'crossbow'
+                        ? { range: 360, cooldown: 1450, damage: 14, speed: 7, color: "#a3e635" }
+                        : this.model === 'catapult'
+                            ? { range: 440, cooldown: 2400, damage: 22, speed: 4, color: "#f97316", splashRadius: 70 }
+                            : this.model === 'siege'
+                                ? { range: 500, cooldown: 2600, damage: 28, speed: 4, color: "#60a5fa", splashRadius: 85 }
+                                : this.model === 'warMachine'
+                                    ? { range: 650, cooldown: 3500, damage: 48, speed: 3.5, color: "#89b819", splashRadius: 140 }
+                                    : this.model === 'gasser'
+                                        ? { range: 600, cooldown: 5000, damage: 25, speed: 3, color: "#1d85e2", splashRadius: 80 }
+                                        : this.model === 'smurf'
+                                            ? { range: 550, cooldown: 5000, damage: 25, speed: 3.5, color: "#1d85e2" }
+                                            : this.model === 'champion'
+                                             ? { range: 600, cooldown: 4000, damage: 60, speed: 3, color: "#facc15", splashRadius: 120 }
+                                             : null;
+
+                if (rangedStats && distanceToPlayer <= rangedStats.range) {
+                    if (Date.now() - this.lastShot >= rangedStats.cooldown) {
+                        this.lastShot = Date.now();
+                        projectiles.push({
+                            x: this.x, y: this.y,
+                            vx: Math.cos(angle) * rangedStats.speed,
+                            vy: Math.sin(angle) * rangedStats.speed,
+                            speed: rangedStats.speed,
+                            targetX: player.x, targetY: player.y,
+                            radius: this.model === 'archer' || this.model === 'crossbow' ? 4 : 6,
+                            color: rangedStats.color,
+                            damage: (rangedStats.damage || 0) * difficultySettings[difficulty].enemyDamage *
+                                (gameMode === 'Rounds' ? 1 + (currentRound - 1) * 0.05 : 1),
+                            isEnemyProjectile: true,
+                            isCatapultBoulder: Boolean(rangedStats.splashRadius) && this.model !== 'gasser',
+                            isEnemyGasCanister: this.model === 'gasser',
+                            splashRadius: rangedStats.splashRadius,
+                            gasDamagePerSecond: (rangedStats.gasDamagePerSecond || 0) *
+                                difficultySettings[difficulty].enemyDamage *
+                                (gameMode === 'Rounds' ? 1 + (currentRound - 1) * 0.05 : 1)
+                        });
+                    }
+                } else {
+                    this.x += Math.cos(angle) * this.speed;
+                    this.y += Math.sin(angle) * this.speed;
+                }
+
+                if (this.model === 'king') {
+                    this.enemySpawnTimerMs += deltaTime;
+                    while (this.enemySpawnTimerMs >= 2000) {
+                        this.enemySpawnTimerMs -= 2000;
+                        for (let i = 0; i < Math.ceil(2 * getEnemyCountMultiplier()); i++) {
+                            enemies.push(new RivalSoldier(getRandomArcadeEnemyVariant()));
+                        }
+                    }
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+
+                ctx.beginPath();
+                ctx.arc(0, this.radius * 0.5, this.radius * 0.8, 0, Math.PI * 2);
+                ctx.fillStyle = "rgba(0,0,0,0.5)";
+                ctx.fill();
+
+                const r = this.radius;
+                const polygon = (points, fill, stroke = "#111827", lineWidth = 2) => {
+                    ctx.beginPath();
+                    ctx.moveTo(points[0][0], points[0][1]);
+                    points.slice(1).forEach(([x, y]) => ctx.lineTo(x, y));
+                    ctx.closePath();
+                    ctx.fillStyle = fill;
+                    ctx.fill();
+                    ctx.lineWidth = lineWidth;
+                    ctx.strokeStyle = stroke;
+                    ctx.stroke();
+                };
+                const circle = (x, y, radius, fill, stroke = "#111827") => {
+                    ctx.beginPath();
+                    ctx.arc(x, y, radius, 0, Math.PI * 2);
+                    ctx.fillStyle = fill;
+                    ctx.fill();
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = stroke;
+                    ctx.stroke();
+                };
+                const line = (points, color, width = 3) => {
+                    ctx.beginPath();
+                    ctx.moveTo(points[0][0], points[0][1]);
+                    points.slice(1).forEach(([x, y]) => ctx.lineTo(x, y));
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = width;
+                    ctx.lineCap = "round";
+                    ctx.lineJoin = "round";
+                    ctx.stroke();
+                };
+
+                switch (this.model.toLowerCase()) {
+                    case "footman":
+                        polygon([[-r * 0.65, -r * 0.45], [r * 0.65, -r * 0.45], [r * 0.5, r * 0.7], [-r * 0.5, r * 0.7]], this.color);
+                        circle(0, -r * 0.55, r * 0.42, "#fca5a5");
+                        polygon([[-r * 0.95, -r * 0.2], [-r * 0.5, -r * 0.5], [-r * 0.45, r * 0.55], [-r * 0.95, r * 0.35]], "#64748b");
+                        line([[r * 0.65, -r * 0.6], [r * 0.9, r * 0.6]], "#e2e8f0", 3);
+                        break;
+                    case "juggernaut":
+                        ctx.fillStyle = "#cbd5e1";
+                        ctx.fillRect(-r * 0.8, -r * 0.8, r * 1.6, r * 1.5);
+                        ctx.strokeStyle = "#475569";
+                        ctx.lineWidth = 3;
+                        ctx.strokeRect(-r * 0.8, -r * 0.8, r * 1.6, r * 1.5);
+                        polygon([[-r * 0.45, -r * 0.45], [r * 0.45, -r * 0.45], [r * 0.35, r * 0.15], [-r * 0.35, r * 0.15]], "#334155");
+                        line([[-r, -r * 0.6], [-r * 0.7, -r * 0.35], [-r, -r * 0.1]], "#f8fafc", 4);
+                        line([[r, -r * 0.6], [r * 0.7, -r * 0.35], [r, -r * 0.1]], "#f8fafc", 4);
+                        break;
+                    case "warmachine":
+                        ctx.fillStyle = "#111827";
+                        ctx.fillRect(-r, r * 0.25, r * 2, r * 0.5);
+                        circle(-r * 0.6, r * 0.5, r * 0.18, "#9ca3af");
+                        circle(0, r * 0.5, r * 0.18, "#9ca3af");
+                        circle(r * 0.6, r * 0.5, r * 0.18, "#9ca3af");
+                        polygon([[-r * 0.75, r * 0.2], [-r * 0.55, -r * 0.5], [r * 0.45, -r * 0.5], [r * 0.8, r * 0.2]], this.color);
+                        ctx.fillStyle = "#d1d5db";
+                        ctx.fillRect(r * 0.1, -r * 0.7, r * 1.05, r * 0.18);
+                        break;
+                    case "siege":
+                        ctx.fillStyle = "#111827";
+                        ctx.fillRect(-r, r * 0.35, r * 2, r * 0.4);
+                        circle(-r * 0.65, r * 0.55, r * 0.2, "#94a3b8");
+                        circle(r * 0.65, r * 0.55, r * 0.2, "#94a3b8");
+                        polygon([[-r * 0.75, r * 0.35], [-r * 0.55, -r * 0.15], [r * 0.55, -r * 0.15], [r * 0.75, r * 0.35]], this.color);
+                        polygon([[-r * 0.35, -r * 0.1], [r * 0.15, -r * 1.15], [r * 0.45, -r * 0.1]], "#93c5fd");
+                        break;
+                    case "catapult":
+                        line([[-r, r * 0.55], [r, r * 0.55]], "#78350f", 5);
+                        circle(-r * 0.55, r * 0.6, r * 0.22, "#1f2937");
+                        circle(r * 0.55, r * 0.6, r * 0.22, "#1f2937");
+                        line([[-r * 0.25, r * 0.35], [0, -r * 0.6], [r * 0.65, -r * 0.95]], "#a16207", 5);
+                        line([[r * 0.55, -r], [r, -r * 0.8]], "#d6d3d1", 2);
+                        circle(r * 0.85, -r * 0.85, r * 0.18, "#57534e");
+                        break;
+                    case "berserker":
+                        polygon([[-r * 0.55, -r * 0.55], [0, -r * 0.8], [r * 0.55, -r * 0.55], [r * 0.75, r * 0.65], [-r * 0.75, r * 0.65]], this.color);
+                        polygon([[-r * 0.5, -r * 0.55], [-r * 0.9, -r], [-r * 0.2, -r * 0.72]], "#fef2f2");
+                        polygon([[r * 0.5, -r * 0.55], [r * 0.9, -r], [r * 0.2, -r * 0.72]], "#fef2f2");
+                        line([[-r * 0.7, -r * 0.4], [-r, r * 0.15], [-r * 0.55, r * 0.1]], "#fecaca", 4);
+                        line([[r * 0.7, -r * 0.4], [r, r * 0.15], [r * 0.55, r * 0.1]], "#fecaca", 4);
+                        break;
+                    case "crossbow":
+                        polygon([[-r * 0.5, -r * 0.55], [r * 0.5, -r * 0.55], [r * 0.65, r * 0.65], [-r * 0.65, r * 0.65]], this.color);
+                        circle(0, -r * 0.55, r * 0.35, "#d9f99d");
+                        line([[-r, -r * 0.35], [r, -r * 0.35]], "#78350f", 4);
+                        line([[-r * 0.55, -r * 0.8], [0, -r * 0.35], [-r * 0.55, r * 0.1]], "#d9f99d", 2);
+                        line([[0, -r * 0.35], [r * 0.85, -r * 0.35]], "#fef3c7", 2);
+                        break;
+                    case "archer":
+                        polygon([[-r * 0.5, -r * 0.55], [r * 0.5, -r * 0.55], [r * 0.7, r * 0.7], [-r * 0.7, r * 0.7]], this.color);
+                        polygon([[-r * 0.55, -r * 0.4], [0, -r], [r * 0.55, -r * 0.4]], "#064e3b");
+                        ctx.beginPath();
+                        ctx.arc(r * 0.45, 0, r * 0.8, -Math.PI / 2, Math.PI / 2);
+                        ctx.strokeStyle = "#d1fae5";
+                        ctx.lineWidth = 3;
+                        ctx.stroke();
+                        line([[0, 0], [r * 0.95, 0]], "#fef3c7", 2);
+                        break;
+                    case "scout":
+                        polygon([[-r * 0.25, -r], [r * 0.75, -r * 0.2], [r * 0.2, r * 0.8], [-r * 0.7, r * 0.5]], this.color);
+                        circle(r * 0.15, -r * 0.45, r * 0.18, "#fed7aa");
+                        line([[-r * 0.2, r * 0.4], [-r * 0.8, r], [-r * 0.25, r * 0.75]], "#7c2d12", 3);
+                        line([[r * 0.3, r * 0.3], [r * 0.85, r * 0.8], [r * 0.2, r * 0.65]], "#7c2d12", 3);
+                        break;
+                    case "knight":
+                        polygon([[-r * 0.75, -r * 0.35], [-r * 0.4, -r * 0.75], [r * 0.4, -r * 0.75], [r * 0.75, -r * 0.35], [r * 0.55, r * 0.7], [-r * 0.55, r * 0.7]], "#9ca3af");
+                        polygon([[-r * 0.45, -r * 0.8], [0, -r * 1.25], [r * 0.45, -r * 0.8]], "#fca5a5");
+                        polygon([[-r, -r * 0.1], [-r * 0.35, -r * 0.3], [-r * 0.3, r * 0.65], [-r, r * 0.45]], "#7f1d1d");
+                        line([[r * 0.65, -r * 0.6], [r * 0.8, r * 0.45]], "#e5e7eb", 3);
+                        break;
+                    case "gasser":
+                        circle(0, -r * 0.1, r * 0.72, this.color, "#365314");
+                        circle(0, -r * 0.15, r * 0.34, "#1f2937", "#d9f99d");
+                        circle(-r * 0.16, -r * 0.15, r * 0.09, "#d9f99d", "#d9f99d");
+                        circle(r * 0.16, -r * 0.15, r * 0.09, "#d9f99d", "#d9f99d");
+                        ctx.fillStyle = "#365314";
+                        ctx.fillRect(-r * 0.95, -r * 0.3, r * 0.28, r * 0.8);
+                        ctx.fillRect(r * 0.67, -r * 0.3, r * 0.28, r * 0.8);
+                        circle(-r * 0.8, -r * 0.4, r * 0.12, "#bef264");
+                        circle(r * 0.8, -r * 0.4, r * 0.12, "#bef264");
+                        break;
+                    case "smurf":
+                        polygon([[-r * 0.6, -r * 0.05], [-r * 1.1, -r * 0.35], [-r * 0.65, -r * 0.65]], "#38bdf8");
+                        polygon([[r * 0.6, -r * 0.05], [r * 1.1, -r * 0.35], [r * 0.65, -r * 0.65]], "#38bdf8");
+                        circle(0, -r * 0.25, r * 0.65, "#38bdf8");
+                        ctx.beginPath();
+                        ctx.moveTo(-r * 0.48, -r * 0.58);
+                        ctx.quadraticCurveTo(-r * 0.5, -r * 0.9, -r * 0.22, -r * 1.12);
+                        ctx.quadraticCurveTo(r * 0.12, -r * 1.38, r * 0.4, -r * 1.12);
+                        ctx.quadraticCurveTo(r * 0.62, -r * 0.9, r * 0.48, -r * 0.65);
+                        ctx.quadraticCurveTo(r * 0.72, -r * 0.57, r * 0.63, -r * 0.42);
+                        ctx.quadraticCurveTo(0, -r * 0.52, -r * 0.48, -r * 0.58);
+                        ctx.fillStyle = "#f8fafc";
+                        ctx.fill();
+                        ctx.strokeStyle = "#cbd5e1";
+                        ctx.lineWidth = Math.max(1, r * 0.045);
+                        ctx.stroke();
+                        line([[-r * 0.28, -r * 0.67], [-r * 0.12, -r * 0.83]], "#e2e8f0", Math.max(1, r * 0.04));
+                        line([[r * 0.35, -r * 0.69], [r * 0.44, -r * 0.84]], "#e2e8f0", Math.max(1, r * 0.04));
+                        circle(-r * 0.18, -r * 0.3, r * 0.07, "#0f172a", "#0f172a");
+                        circle(r * 0.18, -r * 0.3, r * 0.07, "#0f172a", "#0f172a");
+                        break;
+                    case "troll":
+                        polygon([[-r * 0.65, -r * 0.5], [-r * 1.1, -r * 0.9], [-r * 0.9, -r * 0.1]], this.color);
+                        polygon([[r * 0.65, -r * 0.5], [r * 1.1, -r * 0.9], [r * 0.9, -r * 0.1]], this.color);
+                        polygon([[-r * 0.8, -r * 0.6], [-r * 0.45, -r], [r * 0.45, -r], [r * 0.8, -r * 0.6], [r * 0.6, r * 0.8], [-r * 0.6, r * 0.8]], this.color);
+                        line([[r * 0.7, 0], [r * 1.15, r * 0.9]], "#78350f", 7);
+                        circle(r * 1.15, r * 0.88, r * 0.22, "#a16207");
+                        circle(-r * 0.25, -r * 0.45, r * 0.08, "#fef08a");
+                        circle(r * 0.25, -r * 0.45, r * 0.08, "#fef08a");
+                        break;
+                    case "alien":
+                        ctx.beginPath();
+                        ctx.ellipse(0, -r * 0.2, r * 0.62, r, 0, 0, Math.PI * 2);
+                        ctx.fillStyle = this.color;
+                        ctx.fill();
+                        ctx.lineWidth = 2;
+                        ctx.strokeStyle = "#166534";
+                        ctx.stroke();
+                        circle(-r * 0.25, -r * 0.25, r * 0.13, "#111827");
+                        circle(r * 0.25, -r * 0.25, r * 0.13, "#111827");
+                        line([[-r * 0.35, r * 0.45], [-r * 0.6, r], [-r * 0.9, r * 1.1]], "#86efac", 3);
+                        line([[0, r * 0.55], [0, r * 1.05]], "#86efac", 3);
+                        line([[r * 0.35, r * 0.45], [r * 0.6, r], [r * 0.9, r * 1.1]], "#86efac", 3);
+                        line([[-r * 0.25, -r * 0.9], [-r * 0.4, -r * 1.25]], "#86efac", 2);
+                        line([[r * 0.25, -r * 0.9], [r * 0.4, -r * 1.25]], "#86efac", 2);
+                        break;
+                    case "thanos":
+                        polygon([[-r * 0.75, -r * 0.55], [-r * 0.5, -r], [r * 0.5, -r], [r * 0.75, -r * 0.55], [r * 0.6, r * 0.8], [-r * 0.6, r * 0.8]], this.color);
+                        polygon([[-r * 0.5, -r * 0.65], [-r * 0.35, -r * 1.2], [r * 0.35, -r * 1.2], [r * 0.5, -r * 0.65]], "#fbbf24");
+                        ctx.fillStyle = "#fbbf24";
+                        ctx.fillRect(-r * 0.65, -r * 0.1, r * 1.3, r * 0.2);
+                        ["#ef4444", "#3b82f6", "#22c55e", "#eab308", "#a855f7"].forEach((gem, index) => {
+                            circle(-r * 0.45 + index * r * 0.225, r * 0.25, r * 0.09, gem, "#78350f");
+                        });
+                        break;
+                    case "ultron":
+                        polygon([[-r * 0.65, -r * 0.45], [-r * 0.45, -r], [r * 0.45, -r], [r * 0.65, -r * 0.45], [r * 0.5, r * 0.8], [-r * 0.5, r * 0.8]], "#9ca3af");
+                        polygon([[-r * 0.5, -r * 0.35], [-r * 0.35, -r * 0.9], [r * 0.35, -r * 0.9], [r * 0.5, -r * 0.35], [r * 0.3, r * 0.05], [-r * 0.3, r * 0.05]], "#374151");
+                        ctx.fillStyle = "#ef4444";
+                        ctx.fillRect(-r * 0.35, -r * 0.4, r * 0.22, r * 0.1);
+                        ctx.fillRect(r * 0.13, -r * 0.4, r * 0.22, r * 0.1);
+                        line([[-r * 0.35, -r * 0.8], [-r * 0.6, -r * 1.2]], "#d1d5db", 3);
+                        line([[r * 0.35, -r * 0.8], [r * 0.6, -r * 1.2]], "#d1d5db", 3);
+                        break;
+                    case "champion":
+                        polygon([[-r * 0.75, -r * 0.45], [-r * 0.45, -r], [r * 0.45, -r], [r * 0.75, -r * 0.45], [r * 0.55, r * 0.8], [-r * 0.55, r * 0.8]], this.color);
+                        polygon([[-r * 0.45, -r * 0.85], [0, -r * 1.35], [r * 0.45, -r * 0.85], [r * 0.3, -r * 0.55], [-r * 0.3, -r * 0.55]], "#facc15");
+                        polygon([[-r, -r * 0.1], [-r * 0.45, -r * 0.35], [-r * 0.4, r * 0.65], [-r, r * 0.45]], "#facc15");
+                        circle(0, -r * 0.25, r * 0.12, "#f8fafc", "#f8fafc");
+                        break;
+                    case "king":
+                        polygon([[-r * 0.75, -r * 0.4], [-r * 0.55, -r * 0.8], [r * 0.55, -r * 0.8], [r * 0.75, -r * 0.4], [r * 0.9, r * 0.8], [-r * 0.9, r * 0.8]], this.color, "#4c1d95");
+                        circle(0, -r * 0.65, r * 0.42, "#fef3c7", "#854d0e");
+                        polygon([[-r * 0.75, -r * 0.95], [-r * 0.65, -r * 1.5], [-r * 0.2, -r * 1.15], [0, -r * 1.65], [r * 0.25, -r * 1.15], [r * 0.7, -r * 1.5], [r * 0.75, -r * 0.95]], "#facc15", "#854d0e");
+                        break;
+                    default:
+                        circle(0, -4, r, this.color, "#450a0a");
+                }
+
+                ctx.restore();
+
+                const modelKey = this.model.toLowerCase();
+                const healthBarWidth = modelKey === 'king' ? 56 : 28;
+                const healthBarHeightMultiplier = {
+                    king: 1.75,
+                    champion: 1.45,
+                    knight: 1.35,
+                    alien: 1.35,
+                    ultron: 1.3,
+                    thanos: 1.3,
+                    siege: 1.25
+                }[modelKey] ?? 1;
+                const healthBarY = this.y - this.radius * healthBarHeightMultiplier - 14;
+                ctx.fillStyle = "#1e293b";
+                ctx.fillRect(this.x - healthBarWidth / 2, healthBarY, healthBarWidth, 4);
+                ctx.fillStyle = "#22c55e";
+                ctx.fillRect(this.x - healthBarWidth / 2, healthBarY, (this.hp / this.maxHp) * healthBarWidth, 4);
+            }
+        }
+
+        class DefenseStructure {
+            constructor(type, x, y) {
+                this.type = type;
+                this.x = x; this.y = y;
+                this.lastShot = 0;
+                this.enemiesPassed = 0;
+                this.broken = false;
+                this.pulse = 0;
+
+                if (type === 'bushes') this.radius = 32;
+                else if (type === 'archers') { this.radius = 18; this.baseRange = 160; this.baseCooldown = 200; this.baseDamage = 1; }
+                else if (type === 'bank') this.radius = 20;
+                else if (type === 'catapult') { this.radius = 20; this.baseRange = 320; this.baseCooldown = 1300; this.baseDamage = 110; }
+                else if (type === 'gas') { this.radius = 20; this.baseRange = 240; this.baseCooldown = 1800; this.baseDamage = 12; }
+                }
+
+            update() {
+                if (this.broken) return;
+                this.pulse += 0.05;
+
+                if (this.baseRange !== undefined) {
+                    this.range = this.baseRange + getSkillEffect('towerRange');
+                    this.cooldown = this.baseCooldown / (1 + getSkillEffect('towerSpeed'));
+                    this.dmg = this.baseDamage * (1 + getSkillEffect('towerDamage'));
+                }
+
+                const now = Date.now();
+                if (this.type === 'archers') {
+                    if (now - this.lastShot > this.cooldown) {
+                        let target = null, minDst = this.range;
+                        enemies.forEach(e => {
+                            let d = Math.hypot(e.x - this.x, e.y - this.y);
+                            if (d < minDst) { minDst = d; target = e; }
+                        });
+                        if (target) {
+                            this.lastShot = now;
+                            target.hp -= this.dmg;
+                            createExplosion(target.x, target.y, "#cbd5e1", 3);
+                            checkEnemyDeath(target);
+                        }
+                    }
+                } else if (this.type === 'catapult') {
+                    if (now - this.lastShot > this.cooldown) {
+                        let target = null, minDst = this.range;
+                        enemies.forEach(e => {
+                            let d = Math.hypot(e.x - this.x, e.y - this.y);
+                            if (d < minDst) { minDst = d; target = e; }
+                        });
+                        if (target) {
+                            this.lastShot = now;
+                            projectiles.push({
+                                x: this.x, y: this.y,
+                                targetX: target.x, targetY: target.y,
+                                speed: 6, isCatapultBoulder: true,
+                                splashRadius: 80, damage: this.dmg
+                            });
+                        }
+                    }
+                } else if (this.type === 'gas') {
+                    if (now - this.lastShot > this.cooldown) {
+                        let target = null, minDst = this.range;
+                        enemies.forEach(e => {
+                            let d = Math.hypot(e.x - this.x, e.y - this.y);
+                            if (d < minDst) { minDst = d; target = e; }
+                        });
+                        if (target) {
+                            this.lastShot = now;
+                            projectiles.push({
+                                x: this.x, y: this.y,
+                                targetX: target.x, targetY: target.y,
+                                speed: 5, isGasCanister: true,
+                                splashRadius: 72, damage: this.dmg
+                            });
+                        }
+                    }
+                }
+            }
+
+            draw() {
+                if (this.broken) return;
+
+                ctx.save();
+                ctx.translate(this.x, this.y);
+
+                if (this.type === 'bushes') {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = "rgba(16, 185, 129, 0.4)";
+                    ctx.fill();
+                    ctx.lineWidth = 2; ctx.strokeStyle = "#047857";
+                    ctx.setLineDash([4, 4]); ctx.stroke(); ctx.setLineDash([]);
+                } else if (this.type === 'archers') {
+                    ctx.fillStyle = "#78716c";
+                    ctx.fillRect(-this.radius, -this.radius, this.radius * 2, this.radius * 2);
+                    ctx.strokeStyle = "#d6d3d1"; ctx.lineWidth = 2;
+                    ctx.strokeRect(-this.radius, -this.radius, this.radius * 2, this.radius * 2);
+                    ctx.fillStyle = "#fbbf24";
+                    ctx.fillRect(-4, -4, 8, 8);
+                } else if (this.type === 'bank') {
+                    ctx.beginPath();
+                    ctx.arc(0, Math.sin(this.pulse) * 2, this.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = "#b45309"; ctx.fill();
+                    ctx.lineWidth = 2; ctx.strokeStyle = "#f59e0b"; ctx.stroke();
+                } else if (this.type === 'catapult') {
+                    ctx.fillStyle = "#44403c";
+                    ctx.fillRect(-14, -14, 28, 28);
+                    ctx.strokeStyle = "#a8a29e"; ctx.lineWidth = 2;
+                    ctx.strokeRect(-14, -14, 28, 28);
+                    ctx.fillStyle = "#78716c";
+                    ctx.fillRect(-4, -18, 8, 20);
+                } else if (this.type === 'gas') {
+                    ctx.fillStyle = "#365314";
+                    ctx.fillRect(-14, -14, 28, 28);
+                    ctx.strokeStyle = "#a3e635"; ctx.lineWidth = 2;
+                    ctx.strokeRect(-14, -14, 28, 28);
+                    ctx.fillStyle = "#84cc16";
+                    ctx.beginPath();
+                    ctx.arc(0, -2, 7 + Math.sin(this.pulse * 2) * 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x; this.y = y; this.color = color;
+                this.size = Math.random() * 4 + 2;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 3 + 1;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.life = 25;
+            }
+            update() { this.x += this.vx; this.y += this.vy; this.life--; }
+            draw() { ctx.fillStyle = this.color; ctx.fillRect(this.x, this.y, this.size, this.size); }
+        }
+
+        function createExplosion(x, y, color, count = 6) {
+            for (let i = 0; i < count; i++) particles.push(new Particle(x, y, color));
+        }
+
+        function applyPlayerDamage(damage) {
+            const damageMultiplier = Math.max(0, 1 - getSkillEffect('damageReduction'));
+            player.hp -= damage * damageMultiplier;
+            playSoundEffect(110, 0.16, 0.09, "sawtooth");
+            if (player.hp <= 0) {
+                gameState = 'GAMEOVER';
+                runTimerActive = false;
+            }
+        }
+        function applyPlayerSkillBurst() {
+            if (player.skills.spellBurst.rank > 0) {
+                const burstMultiplier = 1 + player.skills.spellBurst.rank * 1.0;
+                player.mana *= burstMultiplier;
+            }
+        }
+
+        function openMilestoneReward(resumeState) {
+            if (gameState === 'MILESTONE_REWARD') return;
+            if (gameMode !== 'arcade') milestoneRewardClaimed = true;
+            milestoneRewardResumeState = resumeState;
+            gameState = 'MILESTONE_REWARD';
+        }
+
+        function chooseMilestoneReward(reward) {
+            if (reward === 'sidekick') sidekickUnlocked = true;
+            else if (reward === 'gold') player.gold += 1000;
+            else if (reward === 'shield') projectileShieldRemainingMs = projectileShieldDurationMs;
+            else if (reward === 'mapSize') {
+                mapExpansionLevel++;
+                canvas.width = Math.round(initialMapWidth * Math.pow(mapExpansionFactor, mapExpansionLevel));
+                canvas.height = Math.round(initialMapHeight * Math.pow(mapExpansionFactor, mapExpansionLevel));
+            }
+            gameState = milestoneRewardResumeState;
+        }
+
+        function getEnemyCountMultiplier() {
+            return Math.pow(mapExpansionFactor, mapExpansionLevel);
+        }
+
+        function checkEnemyDeath(enemy) {
+            if (enemy.hp <= 0) {
+                let idx = enemies.indexOf(enemy);
+                if (idx > -1) {
+                    enemies.splice(idx, 1);
+                    score += 100;
+                    let goldReward = (enemyKillGoldRewards[enemy.model] ?? 10) + getSkillEffect('goldPerKill');
+                    player.gold += goldReward;
+                    playSoundEffect(enemy.model === "king" || enemy.model === "champion" ? 220 : 330,
+                        enemy.model === "king" || enemy.model === "champion" ? 0.25 : 0.06,
+                        0.07, "triangle");
+                    if (gameMode === 'arcade' && Math.random() < 0.1) {
+                        healthOranges.push({ x: enemy.x, y: enemy.y, remainingMs: 15000 });
+                    }
+                }
+            }
+        }
+
+        function startNewGame() {
+            runElapsedMs = 0;
+            runTimerActive = true;
+            player.hp = 100; player.maxHp = 100; player.mana = 100;
+            player.gold = 500;
+            player.mana = 100; player.maxMana = 100;
+            Object.values(player.skills).forEach(skill => {
+                skill.rank = 0;
+            });
+            unlockedSkillTiers = { 1: true, 2: false, 3: false };
+            selectedSkillTier = 1;
+            milestoneRewardClaimed = false;
+            sidekickUnlocked = false;
+            mapExpansionLevel = 0;
+            canvas.width = initialMapWidth;
+            canvas.height = initialMapHeight;
+            projectileShieldRemainingMs = 0;
+            score = 0; currentRound = 1;
+            maxRounds = difficultySettings[difficulty].maxRounds;
+            projectiles = []; gasClouds = []; healthOranges = []; enemies = []; particles = []; defenses = [];
+            pendingPlayerShots = [];
+            skillTreeScrollY = 0;
+            arcadeElapsedMs = 0;
+            arcadeSpawnTimerMs = 0;
+            arcadeNextKingMs = arcadeKingIntervalMs;
+            arcadeNextChampionMs = arcadeChampionIntervalMs;
+            arcadeNextMilestoneRewardMs = arcadeChampionIntervalMs;
+            if (gameMode === 'arcade') {
+                waveActive = false;
+                enemiesRemainingInWave = 0;
+            } else {
+                initRound();
+            }
+            gameState = 'PLAYING';
+            showBuildModal = false;
+        }
+
+        function initRound() {
+            intermissionFrames = 0;
+            waveActive = true;
+            enemiesRemainingInWave = Math.ceil(
+                (5 + (currentRound * 3)) * difficultySettings[difficulty].waveSize * getEnemyCountMultiplier()
+            );
+            kingSpawnedThisWave = false;
+            championSpawnedThisWave = false;
+            waveTimer = 0;
+        }
+
+        window.addEventListener("keydown", (e) => {
+            let k = e.key.toLowerCase();
+            if (!isTextEntryTarget(e.target) && gameState === 'PLAYING') {
+                if (k === keybinds.spell1) currentSpellKey = "1";
+                if (k === keybinds.spell2) currentSpellKey = "2";
+                if (k === keybinds.spell3) currentSpellKey = "3";
+                if (k === keybinds.spell4) currentSpellKey = "4";
+                if (k === keybinds.spell5) currentSpellKey = "5";
+            }
+        });
+
+        function updateGame(deltaTime) {
+            animTimer += 0.05;
+            projectileShieldRemainingMs = Math.max(0, projectileShieldRemainingMs - deltaTime);
+
+            let currentSpeed = player.speed + getSkillEffect('movementSpeed');
+            let dx = 0, dy = 0;
+            if (keys[keybinds.up]) dy -= 1;
+            if (keys[keybinds.down]) dy += 1;
+            if (keys[keybinds.left]) dx -= 1;
+            if (keys[keybinds.right]) dx += 1;
+            if (dx !== 0 && dy !== 0) { dx *= 0.7071; dy *= 0.7071; }
+
+            player.x += dx * currentSpeed;
+            player.y += dy * currentSpeed;
+            player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
+            player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
+
+            let regenRate = 0.3 + getSkillEffect('manaRegen');
+            if (player.mana < player.maxMana) player.mana = Math.min(player.maxMana, player.mana + regenRate);
+            const healthRegenerationPerSecond = getSkillEffect('healthRegen');
+            if (player.hp < player.maxHp && healthRegenerationPerSecond > 0) {
+                player.hp = Math.min(player.maxHp,
+                    player.hp + healthRegenerationPerSecond * deltaTime / 1000);
+            }
+
+            defenses.forEach(def => def.update());
+            defenses = defenses.filter(def => !def.broken);
+
+            if (gameMode === 'arcade') {
+                arcadeElapsedMs += deltaTime;
+                arcadeSpawnTimerMs += deltaTime;
+                while (arcadeNextKingMs <= arcadeElapsedMs || arcadeNextChampionMs <= arcadeElapsedMs) {
+                    if (arcadeNextKingMs <= arcadeNextChampionMs) {
+                        spawnKing();
+                        arcadeNextKingMs += arcadeKingIntervalMs;
+                    } else {
+                        if (arcadeNextChampionMs % arcadeKingIntervalMs !== 0) spawnChampion();
+                        arcadeNextChampionMs += arcadeChampionIntervalMs;
+                    }
+                }
+                if (arcadeElapsedMs >= arcadeNextMilestoneRewardMs) {
+                    while (arcadeNextMilestoneRewardMs <= arcadeElapsedMs) {
+                        arcadeNextMilestoneRewardMs += arcadeChampionIntervalMs;
+                    }
+                    openMilestoneReward('PLAYING');
+                }
+
+                const minutesSinceFirstKing = arcadeElapsedMs >= arcadeKingIntervalMs
+                    ? Math.floor((arcadeElapsedMs - arcadeKingIntervalMs) / 60000)
+                    : 0;
+                const spawnCount = Math.ceil((5 + minutesSinceFirstKing) * getEnemyCountMultiplier());
+                const spawnIntervalMs = 5000;
+
+                if (arcadeSpawnTimerMs >= spawnIntervalMs) {
+                    arcadeSpawnTimerMs %= spawnIntervalMs;
+                    for (let i = 0; i < spawnCount; i++) spawnEnemyForRound();
+                }
+            } else if (waveActive && enemiesRemainingInWave > 0) {
+                waveTimer++;
+                if (waveTimer > Math.max(1, 50 - (currentRound * 3))) {
+                    spawnEnemyForRound();
+                    enemiesRemainingInWave--;
+                    waveTimer = 0;
+                }
+            } else if (waveActive && enemies.length === 0 && enemiesRemainingInWave <= 0) {
+                waveActive = false;
+                player.hp = Math.min(player.maxHp, player.hp + 35);
+
+                let bankMultiplier = 1.05 + getSkillEffect('bankInterest');
+                let activeBanks = defenses.filter(d => d.type === 'bank' && !d.broken).length;
+                let totalMult = Math.pow(bankMultiplier, activeBanks);
+
+                let bonusGold = Math.floor(40 * totalMult);
+                player.gold += bonusGold + 30;
+
+                if (currentRound >= maxRounds) {
+                    gameState = 'VICTORY';
+                    runTimerActive = false;
+                    if (isLeaderboardRun()) {
+                        submitLeaderboardTime(Math.floor(runElapsedMs), difficulty).catch(showLeaderboardError);
+                    }
+                } else {
+                    currentRound++;
+                    intermissionFrames = 30 * 60;
+                    gameState = 'INTERMISSION';
+                    if (currentRound === 11 && !milestoneRewardClaimed) {
+                        openMilestoneReward('INTERMISSION');
+                    }
+                }
+            }
+
+            const now = Date.now();
+            const activeSpell = spells[currentSpellKey];
+            if (mouse.down && !showBuildModal && now - lastShotTime > activeSpell.cooldown) {
+                const spellDamageRank = getSkillEffect('spellDamageRank');
+                let damageMultiplier = 1 + getSkillEffect('spellDamage');
+                let finalDamage = activeSpell.baseDamage * damageMultiplier;
+
+                if (player.mana >= activeSpell.manaCost) {
+                    player.mana -= activeSpell.manaCost;
+                    lastShotTime = now;
+
+                    const baseAngle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
+                    shootProjectile(baseAngle, activeSpell, finalDamage);
+                    for (let rank = 1; rank <= getSkillEffect('burstShots'); rank++) {
+                        pendingPlayerShots.push({
+                            angle: baseAngle,
+                            spell: activeSpell,
+                            damage: finalDamage,
+                            fireAtMs: now + rank * spellBurstDelayMs
+                        });
+                    }
+
+                    if (spellDamageRank >= 3) {
+                        shootProjectile(baseAngle - 0.25, activeSpell, finalDamage * 0.75);
+                        shootProjectile(baseAngle + 0.25, activeSpell, finalDamage * 0.75);
+                    }
+                }
+            }
+
+            for (let i = pendingPlayerShots.length - 1; i >= 0; i--) {
+                const shot = pendingPlayerShots[i];
+                if (now >= shot.fireAtMs) {
+                    shootProjectile(shot.angle, shot.spell, shot.damage);
+                    pendingPlayerShots.splice(i, 1);
+                }
+            }
+
+            function shootProjectile(angle, spell, dmg) {
+                const speedMultiplier = 1 + getSkillEffect('spellSpeed');
+                const spellFrequency = { "1": 220, "2": 520, "3": 880, "4": 330, "5": 65 }[currentSpellKey] ?? 440;
+                playSoundEffect(spellFrequency, currentSpellKey === "5" ? 0.22 : 0.055,
+                    currentSpellKey === "5" ? 0.1 : 0.04,
+                    currentSpellKey === "5" ? "sawtooth" : "sine");
+                const projectile = {
+                    x: player.x, y: player.y,
+                    vx: Math.cos(angle) * spell.speed * speedMultiplier,
+                    vy: Math.sin(angle) * spell.speed * speedMultiplier,
+                    radius: spell.radius,
+                    color: spell.color,
+                    damage: dmg,
+                    piercesRemaining: getSkillEffect('piercingRank') > 0
+                        ? Math.pow(2, getSkillEffect('piercingRank') - 1)
+                        : 0,
+                    hitEnemies: []
+                };
+                projectiles.push(projectile);
+                if (sidekickUnlocked) {
+                    const sidekickPosition = getSidekickPosition();
+                    projectiles.push({
+                        ...projectile,
+                        x: sidekickPosition.x,
+                        y: sidekickPosition.y,
+                        hitEnemies: []
+                    });
+                }
+            }
+
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                let p = projectiles[i];
+                if (p.isEnemyGasCanister) {
+                    const angle = Math.atan2(p.targetY - p.y, p.targetX - p.x);
+                    p.x += Math.cos(angle) * p.speed;
+                    p.y += Math.sin(angle) * p.speed;
+                    if (Math.hypot(p.targetX - p.x, p.targetY - p.y) < p.speed + 1) {
+                        gasClouds.push({
+                            x: p.targetX, y: p.targetY, radius: p.splashRadius,
+                            damage: 0, remainingMs: 4000, tickTimerMs: 0,
+                            playerDamagePerSecond: p.gasDamagePerSecond,
+                            playerDamageTimerMs: 0
+                        });
+                        createExplosion(p.targetX, p.targetY, "#84cc16", 12);
+                        projectiles.splice(i, 1);
+                    }
+                } else if (p.isEnemyProjectile && p.isCatapultBoulder) {
+                    const angle = Math.atan2(p.targetY - p.y, p.targetX - p.x);
+                    p.x += Math.cos(angle) * p.speed;
+                    p.y += Math.sin(angle) * p.speed;
+                    if (Math.hypot(p.targetX - p.x, p.targetY - p.y) < p.speed + 1) {
+                        createExplosion(p.x, p.y, p.color, 15);
+                        if (projectileShieldRemainingMs <= 0 &&
+                            Math.hypot(player.x - p.x, player.y - p.y) < p.splashRadius + player.radius) {
+                            applyPlayerDamage(p.damage);
+                        }
+                        projectiles.splice(i, 1);
+                    }
+                } else if (p.isEnemyProjectile) {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (Math.hypot(player.x - p.x, player.y - p.y) < player.radius + p.radius) {
+                        if (projectileShieldRemainingMs > 0) {
+                            createExplosion(player.x, player.y, "#38bdf8", 4);
+                        } else {
+                            applyPlayerDamage(p.damage);
+                            createExplosion(player.x, player.y, p.color);
+                        }
+                        projectiles.splice(i, 1);
+                    }
+                } else if (p.isCatapultBoulder) {
+                    let angle = Math.atan2(p.targetY - p.y, p.targetX - p.x);
+                    p.x += Math.cos(angle) * p.speed;
+                    p.y += Math.sin(angle) * p.speed;
+                    if (Math.hypot(p.targetX - p.x, p.targetY - p.y) < 10) {
+                        createExplosion(p.x, p.y, "#f97316", 15);
+                        enemies.forEach(e => {
+                            if (Math.hypot(e.x - p.x, e.y - p.y) < p.splashRadius) {
+                                e.hp -= p.damage;
+                                checkEnemyDeath(e);
+                            }
+                        });
+                        projectiles.splice(i, 1);
+                    }
+                } else if (p.isGasCanister) {
+                    const angle = Math.atan2(p.targetY - p.y, p.targetX - p.x);
+                    p.x += Math.cos(angle) * p.speed;
+                    p.y += Math.sin(angle) * p.speed;
+                    if (Math.hypot(p.targetX - p.x, p.targetY - p.y) < p.speed + 1) {
+                        gasClouds.push({
+                            x: p.targetX, y: p.targetY, radius: p.splashRadius,
+                            damage: p.damage, remainingMs: 4000, tickTimerMs: 0
+                        });
+                        createExplosion(p.targetX, p.targetY, "#84cc16", 12);
+                        projectiles.splice(i, 1);
+                    }
+                } else {
+                    p.x += p.vx; p.y += p.vy;
+                    if (p.x < 0 || p.x > canvas.width || p.y < 0 || p.y > canvas.height) {
+                        projectiles.splice(i, 1);
+                        continue;
+                    }
+                    for (let j = enemies.length - 1; j >= 0; j--) {
+                        let e = enemies[j];
+                        if (p.hitEnemies && p.hitEnemies.includes(e)) continue;
+                        if (Math.hypot(p.x - e.x, p.y - e.y) < p.radius + e.radius) {
+                            if (p.hitEnemies) p.hitEnemies.push(e);
+                            e.hp -= p.damage;
+                            createExplosion(e.x, e.y, p.color);
+                            checkEnemyDeath(e);
+                            if (p.piercesRemaining > 0) {
+                                p.piercesRemaining--;
+                            } else {
+                                projectiles.splice(i, 1);
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            for (let i = gasClouds.length - 1; i >= 0; i--) {
+                const cloud = gasClouds[i];
+                const elapsedMs = Math.min(deltaTime, cloud.remainingMs);
+                cloud.remainingMs -= deltaTime;
+                cloud.tickTimerMs += elapsedMs;
+                while (cloud.tickTimerMs >= 500) {
+                    cloud.tickTimerMs -= 500;
+                    for (let j = enemies.length - 1; j >= 0; j--) {
+                        const enemy = enemies[j];
+                        if (Math.hypot(enemy.x - cloud.x, enemy.y - cloud.y) < cloud.radius + enemy.radius) {
+                            enemy.hp -= cloud.damage;
+                            checkEnemyDeath(enemy);
+                        }
+                    }
+                }
+                if (cloud.playerDamagePerSecond) {
+                    if (Math.hypot(player.x - cloud.x, player.y - cloud.y) < cloud.radius + player.radius) {
+                        cloud.playerDamageTimerMs += elapsedMs;
+                        while (cloud.playerDamageTimerMs >= 1000) {
+                            cloud.playerDamageTimerMs -= 1000;
+                            applyPlayerDamage(cloud.playerDamagePerSecond);
+                        }
+                    } else {
+                        cloud.playerDamageTimerMs = 0;
+                    }
+                }
+                if (cloud.remainingMs <= 0) gasClouds.splice(i, 1);
+            }
+
+            for (let i = healthOranges.length - 1; i >= 0; i--) {
+                const orange = healthOranges[i];
+                orange.remainingMs -= deltaTime;
+                if (orange.remainingMs <= 0) {
+                    healthOranges.splice(i, 1);
+                } else if (Math.hypot(player.x - orange.x, player.y - orange.y) < player.radius + 14) {
+                    player.hp = Math.min(player.maxHp, player.hp + 25);
+                    healthOranges.splice(i, 1);
+                }
+            }
+
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                let e = enemies[i];
+                e.update(deltaTime);
+
+                if (Math.hypot(player.x - e.x, player.y - e.y) < player.radius + e.radius) {
+                    e.contactDamageTimerMs = Math.max(0, e.contactDamageTimerMs - deltaTime);
+                    if (e.contactDamageTimerMs === 0) {
+                        applyPlayerDamage(e.contactDamage);
+                        createExplosion(player.x, player.y, "#ef4444");
+                        e.contactDamageTimerMs = enemyContactDamageIntervalMs;
+                    }
+                } else {
+                    e.contactDamageTimerMs = 0;
+                }
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                if (particles[i].life <= 0) particles.splice(i, 1);
+            }
+        }
+
+        function drawHUD() {
+            ctx.fillStyle = "#f3f4f6";
+            ctx.font = "15px Georgia, serif";
+            ctx.fillText(`Score: ${score}`, 20, 30);
+            if (gameMode === 'arcade') {
+                const elapsedSeconds = Math.floor(arcadeElapsedMs / 1000);
+                const minutes = String(Math.floor(elapsedSeconds / 60)).padStart(2, '0');
+                const seconds = String(elapsedSeconds % 60).padStart(2, '0');
+                const secondsToKing = Math.max(0, Math.ceil((arcadeNextKingMs - arcadeElapsedMs) / 1000));
+                const kingMinutes = String(Math.floor(secondsToKing / 60)).padStart(2, '0');
+                const kingSeconds = String(secondsToKing % 60).padStart(2, '0');
+                ctx.fillText(`Time: ${minutes}:${seconds}`, 20, 55);
+                ctx.fillText(`Next King: ${kingMinutes}:${kingSeconds}`, 20, 80);
+                ctx.fillStyle = "#d4af37";
+                ctx.fillText(`Gold: 🪙 ${player.gold}`, 20, 105);
+                ctx.fillStyle = "#f3f4f6";
+                ctx.fillText(`Spell: ${spells[currentSpellKey].name} [${currentSpellKey}]`, 20, 130);
+            } else {
+                ctx.fillText(`Time: ${formatElapsedTime(runElapsedMs)}`, 20, 55);
+                ctx.fillText(`Round: ${currentRound} / ${maxRounds}`, 20, 80);
+                ctx.fillStyle = "#d4af37";
+                ctx.fillText(`Gold: 🪙 ${player.gold}`, 20, 105);
+                ctx.fillStyle = "#f3f4f6";
+                ctx.fillText(`Spell: ${spells[currentSpellKey].name} [${currentSpellKey}]`, 20, 130);
+            }
+            if (projectileShieldRemainingMs > 0) {
+                ctx.fillStyle = "#38bdf8";
+                ctx.fillText(`Shield: ${Math.ceil(projectileShieldRemainingMs / 1000)}s`, 20, 180);
+            }
+
+            ctx.fillStyle = "#f3f4f6"; ctx.font = "12px Georgia, serif";
+            ctx.fillText(`HP: ${Math.ceil(player.hp)} / ${player.maxHp}`, 20, 644);
+            ctx.fillText(`Mana: ${Math.ceil(player.mana)} / ${player.maxMana}`, 180, 644);
+
+            ctx.fillStyle = "#27272a"; ctx.fillRect(20, 650, 150, 16);
+            ctx.fillStyle = "#dc2626"; ctx.fillRect(20, 650, (player.hp / player.maxHp) * 150, 16);
+            ctx.strokeStyle = "#d4af37"; ctx.strokeRect(20, 650, 150, 16);
+            ctx.fillStyle = "#f3f4f6"; ctx.font = "11px Georgia, serif"; ctx.fillText("HP", 25, 662);
+
+            ctx.fillStyle = "#27272a"; ctx.fillRect(180, 650, 150, 16);
+            ctx.fillStyle = "#2563eb"; ctx.fillRect(180, 650, (player.mana / player.maxMana) * 150, 16);
+            ctx.strokeStyle = "#d4af37"; ctx.strokeRect(180, 650, 150, 16);
+            ctx.fillStyle = "#f3f4f6"; ctx.fillText("MANA", 185, 662);
+        }
+
+        function getSidekickPosition() {
+            const angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
+            return {
+                x: player.x - Math.cos(angle) * 34,
+                y: player.y - Math.sin(angle) * 34
+            };
+        }
+
+        function drawGameScene() {
+            ctx.fillStyle = "#121218";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.strokeStyle = "#1f1e29"; ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width; x += 60) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
+            for (let y = 0; y < canvas.height; y += 60) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
+
+            defenses.forEach(d => {
+                d.draw();
+                if (Math.hypot(mouse.x - d.x, mouse.y - d.y) < d.radius + 5 && (d.range || d.type === 'bushes')) {
+                    ctx.beginPath();
+                    ctx.arc(d.x, d.y, d.range || d.radius, 0, Math.PI * 2);
+                    ctx.strokeStyle = "rgba(212, 175, 55, 0.4)";
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([6, 6]);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+            });
+
+            gasClouds.forEach(cloud => {
+                const opacity = Math.min(0.3, cloud.remainingMs / 4000 * 0.3);
+                ctx.beginPath();
+                ctx.arc(cloud.x, cloud.y, cloud.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(132, 204, 22, ${opacity})`;
+                ctx.fill();
+                ctx.strokeStyle = "rgba(190, 242, 100, 0.7)";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+
+            healthOranges.forEach(orange => {
+                ctx.beginPath();
+                ctx.arc(orange.x, orange.y, 12, 0, Math.PI * 2);
+                ctx.fillStyle = "#f97316";
+                ctx.fill();
+                ctx.strokeStyle = "#fed7aa";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.ellipse(orange.x + 3, orange.y - 12, 5, 2.5, -0.5, 0, Math.PI * 2);
+                ctx.fillStyle = "#65a30d";
+                ctx.fill();
+            });
+
+            particles.forEach(p => p.draw());
+
+            projectiles.forEach(p => {
+                ctx.beginPath();
+                if (p.isCatapultBoulder) {
+                    ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+                    ctx.fillStyle = p.color || "#f97316";
+                } else if (p.isGasCanister || p.isEnemyGasCanister) {
+                    ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+                    ctx.fillStyle = "#84cc16";
+                } else {
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = p.color;
+                }
+                ctx.shadowBlur = 10; ctx.shadowColor = p.color || "#f97316";
+                ctx.fill(); ctx.shadowBlur = 0; ctx.closePath();
+            });
+
+            enemies.forEach(e => e.draw());
+
+            if (sidekickUnlocked) {
+                const sidekickPosition = getSidekickPosition();
+                ctx.beginPath();
+                ctx.arc(sidekickPosition.x, sidekickPosition.y, 10, 0, Math.PI * 2);
+                ctx.fillStyle = "#0e7490";
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = "#67e8f9";
+                ctx.stroke();
+                ctx.fillStyle = "#facc15";
+                ctx.fillRect(sidekickPosition.x - 4, sidekickPosition.y - 14, 8, 3);
+            }
+
+            ctx.save();
+            ctx.translate(player.x, player.y);
+            ctx.beginPath();
+            ctx.arc(0, player.radius * 0.5, player.radius * 0.8, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(0, 0, player.radius, 0, Math.PI * 2);
+            ctx.fillStyle = "#4338ca"; ctx.shadowBlur = 15; ctx.shadowColor = "#6366f1";
+            ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = "#fbbf24"; ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = "#fbbf24";
+            ctx.fillRect(-8, -player.radius - 6, 16, 6);
+
+            ctx.restore();
+
+            if (projectileShieldRemainingMs > 0) {
+                ctx.beginPath();
+                ctx.arc(player.x, player.y, player.radius + 9, 0, Math.PI * 2);
+                ctx.strokeStyle = "rgba(56, 189, 248, 0.85)";
+                ctx.lineWidth = 3;
+                ctx.setLineDash([8, 6]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            const angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
+            ctx.beginPath(); ctx.moveTo(player.x, player.y);
+            ctx.lineTo(player.x + Math.cos(angle) * 28, player.y + Math.sin(angle) * 28);
+            ctx.strokeStyle = "#fbbf24"; ctx.lineWidth = 4; ctx.stroke(); ctx.closePath();
+
+            drawHUD();
+            if (selectedDefenseType) {
+                ctx.fillStyle = "#f3f4f6";
+                ctx.font = "16px Georgia, serif";
+                ctx.textAlign = "center";
+                ctx.fillText("Click anywhere to place the selected defense", canvas.width / 2, canvas.height - 20);
+            }
+            if (showBuildModal) drawBuildModal();
+        }
+
+        function drawIntermissionScreen() {
+            drawGameScene();
+
+            ctx.fillStyle = "rgba(9, 9, 14, 0.9)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            let modalW = 600, modalH = 400;
+            let mx = (canvas.width - modalW) / 2, my = (canvas.height - modalH) / 2;
+
+            ctx.fillStyle = "#1e1b18"; ctx.fillRect(mx, my, modalW, modalH);
+            ctx.strokeStyle = "#d4af37"; ctx.lineWidth = 3; ctx.strokeRect(mx, my, modalW, modalH);
+
+            let cx = mx + modalW - 30, cy = my + 30;
+            ctx.fillStyle = "#991b1b"; ctx.beginPath(); ctx.arc(cx, cy, 14, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#fff"; ctx.font = "bold 14px Georgia, serif"; ctx.textAlign = "center"; ctx.fillText("X", cx, cy + 5);
+
+            // Clicking 'X' now pauses/pauses intermission safely instead of forcing wave start
+            if (mouse.clicked && Math.hypot(mouse.x - cx, mouse.y - cy) < 14) {
+                gameState = 'PAUSED';
+            }
+
+            let secondsLeft = Math.ceil(intermissionFrames / 60);
+            intermissionFrames--;
+
+            if (intermissionFrames <= 0) {
+                initRound();
+                gameState = 'PLAYING';
+            }
+
+            ctx.textAlign = "center";
+            ctx.fillStyle = "#d4af37"; ctx.font = "bold 32px Georgia, serif";
+            ctx.fillText(`ROUND ${currentRound - 1} CONQUERED`, canvas.width / 2, my + 80);
+
+            ctx.fillStyle = "#f59e0b"; ctx.font = "22px Georgia, serif";
+            ctx.fillText(`Next Wave Approaches in: ${secondsLeft}s`, canvas.width / 2, my + 140);
+
+            ctx.fillStyle = "#cbd5e1"; ctx.font = "15px Georgia, serif";
+            ctx.fillText("Fortify your kingdom or skip the intermission!", canvas.width / 2, my + 190);
+
+            drawButton(canvas.width / 2 - 110, my + 250, 220, 48, "#166534", "#fff", "SKIP & FIGHT NOW", () => {
+                initRound();
+                gameState = 'PLAYING';
+            });
+        }
+
+        function drawBuildModal() {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            let modalW = 600, modalH = 460;
+            let mx = (canvas.width - modalW) / 2, my = (canvas.height - modalH) / 2;
+
+            ctx.fillStyle = "#1e1b18"; ctx.fillRect(mx, my, modalW, modalH);
+            ctx.strokeStyle = "#d4af37"; ctx.lineWidth = 3; ctx.strokeRect(mx, my, modalW, modalH);
+
+            let cx = mx + modalW - 30, cy = my + 30;
+            ctx.fillStyle = "#991b1b"; ctx.beginPath(); ctx.arc(cx, cy, 14, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#fff"; ctx.font = "bold 14px Georgia, serif"; ctx.textAlign = "center"; ctx.fillText("X", cx, cy + 5);
+            if (mouse.clicked && Math.hypot(mouse.x - cx, mouse.y - cy) < 14) {
+                showBuildModal = false;
+            }
+
+            ctx.fillStyle = "#d4af37"; ctx.font = "bold 24px Georgia, serif"; ctx.textAlign = "center";
+            ctx.fillText("FORTIFY ROYAL DEFENSES", canvas.width / 2, my + 50);
+
+            let options = [
+                { type: 'bushes', name: 'Thorn Bushes', cost: defenseCosts.bushes, desc: 'Slows & 2 DPS', yOffset: 90 },
+                { type: 'archers', name: 'Archers', cost: defenseCosts.archers, desc: 'Rapid Arrows, 1 Dmg', yOffset: 165 },
+                { type: 'bank', name: 'Treasury Vault', cost: defenseCosts.bank, desc: 'Stacking Gold Bonus', yOffset: 240 },
+                { type: 'catapult', name: 'Catapult', cost: defenseCosts.catapult, desc: 'Long Range AoE Splash', yOffset: 315 },
+                { type: 'gas', name: 'Gas Tower', cost: defenseCosts.gas, desc: 'Poison cloud AoE damage', yOffset: 390 }
+
+            ];
+
+            options.forEach(opt => {
+                let bx = mx + 40, by = my + opt.yOffset, bw = modalW - 80, bh = 60;
+                const towerCount = getDefenseCount(opt.type);
+                const isMaxed = towerCount >= defenseLimits[opt.type];
+                let isHover = !isMaxed && mouse.x > bx && mouse.x < bx + bw && mouse.y > by && mouse.y < by + bh;
+
+                ctx.fillStyle = isMaxed ? "#27231f" : isHover ? "#3f3224" : "#2c2219";
+                ctx.fillRect(bx, by, bw, bh);
+                ctx.strokeStyle = "#d4af37"; ctx.lineWidth = 1; ctx.strokeRect(bx, by, bw, bh);
+
+                ctx.fillStyle = isMaxed ? "#9ca3af" : "#fff"; ctx.font = "bold 16px Georgia, serif"; ctx.textAlign = "left";
+                ctx.fillText(opt.name, bx + 20, by + 35);
+                ctx.fillStyle = "#cbd5e1"; ctx.font = "13px Georgia, serif";
+                ctx.fillText(opt.desc, bx + 200, by + 35);
+                ctx.fillStyle = isMaxed ? "#f87171" : "#cbd5e1"; ctx.textAlign = "right";
+                ctx.fillText(`${towerCount} / ${defenseLimits[opt.type]}`, bx + bw - 105, by + 35);
+                ctx.fillStyle = "#f59e0b"; ctx.textAlign = "right";
+                ctx.fillText(`🪙 ${opt.cost}`, bx + bw - 20, by + 35);
+
+                if (mouse.clicked && isHover && !isMaxed) {
+                    selectedDefenseType = opt.type;
+                    showBuildModal = false;
+                }
+            });
+        }
+
+        canvas.addEventListener("click", () => {
+            if (placementClick && (gameState === 'PLAYING' || gameState === 'INTERMISSION') && selectedDefenseType && !showBuildModal) {
+                let cost = defenseCosts[selectedDefenseType];
+                if (getDefenseCount(selectedDefenseType) < defenseLimits[selectedDefenseType] && player.gold >= cost) {
+                    player.gold -= cost;
+                    defenses.push(new DefenseStructure(selectedDefenseType, mouse.x, mouse.y));
+                    selectedDefenseType = null;
+                }
+            }
+            placementClick = false;
+        });
+
+        function drawMenu() {
+            ctx.fillStyle = "#09090e";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = "#d4af37"; ctx.font = "bold 50px Georgia, serif"; ctx.textAlign = "center";
+            ctx.fillText("SPELLBOUND: KING'S REALM", canvas.width / 2, 120);
+
+            ctx.fillStyle = "#94a3b8"; ctx.font = "16px Georgia, serif";
+            ctx.fillText("Defend your crown against the rival kingdom, place archers, and master royal spells.", canvas.width / 2, 170);
+
+            drawButton(canvas.width / 2 - 110, 230, 220, 48, "#5c4033", "#fff", "START REIGN", () => startNewGame());
+            drawButton(canvas.width / 2 - 110, 295, 220, 48, "#5c4033", "#fff", `MODE: ${gameMode.toUpperCase()}`, () => {
+                gameMode = gameMode === 'Rounds' ? 'arcade' : 'Rounds';
+            });
+            drawButton(canvas.width / 2 - 110, 360, 220, 48, "#5c4033", "#fff", "CONTROLS MENU", () => openControlsMenu('MENU'));
+            drawButton(canvas.width / 2 - 110, 425, 220, 48, "#5c4033", "#fff", "DIFFICULTY", () => gameState = 'DIFFICULTY');
+            drawButton(canvas.width / 2 - 110, 490, 220, 48, "#5c4033", "#fff", "AUDIO SETTINGS", () => openAudioSettings('MENU'));
+            drawButton(canvas.width / 2 - 110, 555, 220, 48, "#166534", "#fff",
+                communityUser ? "SIGN OUT" : "LOG IN", handleAccountButton);
+            ctx.fillStyle = "#94a3b8"; ctx.font = "14px Georgia, serif"; ctx.textAlign = "center";
+            ctx.fillText(gameMode === 'arcade'
+                ? "Arcade: king every 6 minutes; champion every 3, except with the king."
+                : "Normal: survive 20 waves; a champion arrives every 10th round.", canvas.width / 2, 650);
+            ctx.fillText(`Difficulty: ${difficulty.toUpperCase()}`, canvas.width / 2, 675);
+        }
+
+        function drawAudioSettings() {
+            ctx.fillStyle = "#09090e";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = "#d4af37";
+            ctx.font = "bold 42px Georgia, serif";
+            ctx.textAlign = "center";
+            ctx.fillText("AUDIO SETTINGS", canvas.width / 2, 150);
+
+            ctx.fillStyle = "#94a3b8";
+            ctx.font = "16px Georgia, serif";
+            ctx.fillText("Choose which audio is heard during the reign.", canvas.width / 2, 195);
+
+            drawButton(canvas.width / 2 - 160, 260, 320, 52, "#5c4033", "#fff",
+                `MENU & GAME MUSIC: ${musicEnabled ? "ON" : "OFF"}`, () => {
+                    musicEnabled = !musicEnabled;
+                    if (!musicEnabled) {
+                        if (musicTimer) clearInterval(musicTimer);
+                        musicTimer = null;
+                        musicMode = null;
+                    } else {
+                        ensureMusicStarted();
+                        setMusicMode(getActiveMusicMode());
+                        if (musicContext && musicContext.state === "suspended") musicContext.resume();
+                    }
+                });
+            drawButton(canvas.width / 2 - 160, 340, 320, 52, "#5c4033", "#fff",
+                `SOUND EFFECTS: ${soundEffectsEnabled ? "ON" : "OFF"}`, () => {
+                    soundEffectsEnabled = !soundEffectsEnabled;
+                    if (soundEffectsEnabled) playSoundEffect(660, 0.1, 0.08, "triangle");
+                });
+            drawVolumeSlider("MUSIC VOLUME", 430, musicVolume, (value) => {
+                musicVolume = value;
+                if (musicMaster) musicMaster.gain.setTargetAtTime(musicVolume, musicContext.currentTime, 0.02);
+            });
+            drawVolumeSlider("SOUND EFFECTS VOLUME", 510, soundEffectsVolume, (value) => {
+                soundEffectsVolume = value;
+                if (soundEffectsMaster) soundEffectsMaster.gain.setTargetAtTime(soundEffectsVolume, musicContext.currentTime, 0.02);
+            });
+            drawButton(canvas.width / 2 - 110, 610, 220, 44, "#166534", "#fff",
+                audioReturnState === 'PAUSED' ? "BACK TO PAUSE MENU" : "BACK TO MENU",
+                () => gameState = audioReturnState);
+        }
+
+        function drawVolumeSlider(label, y, value, onChange) {
+            const x = canvas.width / 2 - 160;
+            const width = 320;
+            ctx.fillStyle = "#94a3b8";
+            ctx.font = "15px Georgia, serif";
+            ctx.textAlign = "left";
+            ctx.fillText(label, x, y - 10);
+            ctx.textAlign = "right";
+            ctx.fillText(`${Math.round(value * 100)}%`, x + width, y - 10);
+
+            ctx.fillStyle = "#27272a";
+            ctx.fillRect(x, y, width, 14);
+            ctx.fillStyle = "#d4af37";
+            ctx.fillRect(x, y, width * value, 14);
+            ctx.strokeStyle = "#fef3c7";
+            ctx.strokeRect(x, y, width, 14);
+
+            if (mouse.down && gameState === "AUDIO" &&
+                mouse.x >= x && mouse.x <= x + width &&
+                mouse.y >= y - 12 && mouse.y <= y + 26) {
+                onChange(Math.max(0, Math.min(1, (mouse.x - x) / width)));
+            }
+        }
+
+        function drawDifficultyMenu() {
+            ctx.fillStyle = "#09090e";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = "#d4af37"; ctx.font = "bold 42px Georgia, serif"; ctx.textAlign = "center";
+            ctx.fillText("CHOOSE YOUR DIFFICULTY", canvas.width / 2, 150);
+            ctx.fillStyle = "#94a3b8"; ctx.font = "16px Georgia, serif";
+            ctx.fillText("Select a challenge level. You can change it before starting a reign.", canvas.width / 2, 195);
+
+            const options = [
+                { id: 'easy', label: "EASY", description: "Fewer, slower enemies with less health and damage. 10 rounds." },
+                { id: 'normal', label: "NORMAL", description: "The standard balance. 20 rounds." },
+                { id: 'hard', label: "HARD", description: "More, faster, tougher enemies that hit harder. 40 rounds." },
+                { id: 'extreme', label: "EXTREME", description: "The ultimate challenge with the most powerful enemies. 60 rounds." },
+                { id: 'impossible', label: "IMPOSSIBLE", description: "The ultimate test of skill with the most powerful enemies. 100 rounds." }
+            ];
+            options.forEach((option, index) => {
+                const y = 250 + index * 90;
+                drawButton(
+                    canvas.width / 2 - 160, y, 320, 52,
+                    difficulty === option.id ? "#166534" : "#5c4033",
+                    "#fff", option.label,
+                    () => difficulty = option.id
+                );
+                ctx.fillStyle = "#cbd5e1"; ctx.font = "14px Georgia, serif"; ctx.textAlign = "center";
+                ctx.fillText(option.description, canvas.width / 2, y + 72);
+            });
+
+            drawButton(canvas.width / 2 - 110, 700, 220, 44, "#5c4033", "#fff", "BACK TO MENU", () => gameState = 'MENU');
+        }
+
+        function getControlsMenuLayout() {
+            const modalW = 600, modalH = 560;
+            const mx = (canvas.width - modalW) / 2, my = (canvas.height - modalH) / 2;
+            const viewport = { x: mx + 32, y: my + 75, width: modalW - 64, height: 350 };
+            const rowHeight = 38;
+            const contentHeight = controlDefinitions.length * rowHeight;
+            const maxScroll = Math.max(0, contentHeight - viewport.height);
+            controlsScrollY = Math.max(0, Math.min(maxScroll, controlsScrollY));
+            const track = { x: mx + modalW - 26, y: viewport.y, width: 8, height: viewport.height };
+            const thumbHeight = Math.min(track.height, Math.max(36, track.height * viewport.height / contentHeight));
+            const thumbY = track.y + (maxScroll > 0
+                ? (controlsScrollY / maxScroll) * (track.height - thumbHeight)
+                : 0);
+            return { mx, my, modalW, modalH, viewport, rowHeight, contentHeight, maxScroll, track, thumbHeight, thumbY };
+        }
+
+        function drawControlsMenu() {
+            ctx.fillStyle = "rgba(9, 9, 14, 0.95)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const layout = getControlsMenuLayout();
+            const { mx, my, modalW, modalH, viewport } = layout;
+
+            ctx.fillStyle = "#1e1b18"; ctx.fillRect(mx, my, modalW, modalH);
+            ctx.strokeStyle = "#d4af37"; ctx.lineWidth = 3; ctx.strokeRect(mx, my, modalW, modalH);
+
+            let cx = mx + modalW - 30, cy = my + 30;
+            ctx.fillStyle = "#991b1b"; ctx.beginPath(); ctx.arc(cx, cy, 14, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#fff"; ctx.font = "bold 14px Georgia, serif"; ctx.textAlign = "center"; ctx.fillText("X", cx, cy + 5);
+            if (mouse.clicked && Math.hypot(mouse.x - cx, mouse.y - cy) < 14) {
+                gameState = controlsReturnState;
+            }
+
+            ctx.textAlign = "center"; ctx.fillStyle = "#d4af37"; ctx.font = "bold 26px Georgia, serif";
+            ctx.fillText("CUSTOMIZE CONTROLS", canvas.width / 2, my + 50);
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(viewport.x, viewport.y, viewport.width, viewport.height);
+            ctx.clip();
+            controlDefinitions.forEach((b, idx) => {
+                const by = viewport.y + 10 + (idx * layout.rowHeight) - controlsScrollY;
+                let bx = mx + 350, bw = 180, bh = 30;
+                if (by + bh < viewport.y || by > viewport.y + viewport.height) return;
+                let isHover = mouse.x > bx && mouse.x < bx + bw && mouse.y > by && mouse.y < by + bh;
+
+                ctx.fillStyle = "#f3f4f6"; ctx.font = "14px Georgia, serif"; ctx.textAlign = "left";
+                ctx.fillText(b.label, mx + 50, by + 20);
+
+                ctx.fillStyle = waitingForKeyRebind === b.key ? "#f59e0b" : (isHover ? "#3f3224" : "#2c2219");
+                ctx.fillRect(bx, by, bw, bh);
+                ctx.strokeStyle = "#d4af37"; ctx.lineWidth = 1; ctx.strokeRect(bx, by, bw, bh);
+
+                ctx.fillStyle = "#fff"; ctx.textAlign = "center";
+                ctx.fillText(waitingForKeyRebind === b.key ? "PRESS ANY KEY..." : keybinds[b.key].toUpperCase(), bx + bw / 2, by + 20);
+
+                if (mouse.clicked && isHover) {
+                    waitingForKeyRebind = b.key;
+                }
+            });
+            ctx.restore();
+
+            if (layout.maxScroll > 0) {
+                ctx.fillStyle = "#2c2219";
+                ctx.fillRect(layout.track.x, layout.track.y, layout.track.width, layout.track.height);
+                ctx.fillStyle = "#d4af37";
+                ctx.fillRect(layout.track.x, layout.thumbY, layout.track.width, layout.thumbHeight);
+            }
+
+            drawButton(canvas.width / 2 - 90, my + modalH - 50, 180, 36, "#5c4033", "#fff",
+                controlsReturnState === 'PAUSED' ? "BACK TO PAUSE MENU" : "BACK TO MENU",
+                () => gameState = controlsReturnState);
+        }
+
+        function drawSkillTree() {
+            ctx.fillStyle = "rgba(9, 9, 14, 0.96)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const layout = getSkillTreeLayout();
+            const { mx, my, modalW, modalH, viewport, rowHeight, maxScroll, track, thumbHeight } = layout;
+            skillTreeScrollY = Math.max(0, Math.min(maxScroll, skillTreeScrollY));
+            const thumbY = track.y + (maxScroll > 0
+                ? (skillTreeScrollY / maxScroll) * (track.height - thumbHeight)
+                : 0);
+
+            ctx.fillStyle = "#171622"; ctx.fillRect(mx, my, modalW, modalH);
+            ctx.strokeStyle = "#d4af37"; ctx.lineWidth = 3; ctx.strokeRect(mx, my, modalW, modalH);
+
+            let cx = mx + modalW - 30, cy = my + 30;
+            ctx.fillStyle = "#991b1b"; ctx.beginPath(); ctx.arc(cx, cy, 14, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#fff"; ctx.font = "bold 14px Georgia, serif"; ctx.textAlign = "center"; ctx.fillText("X", cx, cy + 5);
+            if (mouse.clicked && Math.hypot(mouse.x - cx, mouse.y - cy) < 14) {
+                closeSkillTree();
+            }
+
+            ctx.textAlign = "center"; ctx.fillStyle = "#d4af37"; ctx.font = "bold 28px Georgia, serif";
+            ctx.fillText("ROYAL TREASURY SKILL TREE", canvas.width / 2, my + 45);
+
+            ctx.fillStyle = "#f59e0b"; ctx.font = "16px Georgia, serif";
+            ctx.fillText(`Available Gold: 🪙 ${player.gold}`, canvas.width / 2, my + 75);
+
+            Object.entries(skillTierSettings).forEach(([tier, settings], index) => {
+                const tierNumber = Number(tier);
+                const unlocked = unlockedSkillTiers[tierNumber];
+                const buttonText = unlocked
+                    ? settings.name
+                    : `${settings.name} - 🪙 ${settings.unlockCost.toLocaleString()}`;
+                const buttonX = canvas.width / 2 - 240 + index * 160;
+                drawButton(buttonX, my + 88, 145, 34,
+                    selectedSkillTier === tierNumber ? "#166534" : unlocked ? "#5c4033" : "#3f3224",
+                    "#fff", buttonText, () => selectSkillTier(tierNumber));
+            });
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(viewport.x, viewport.y, viewport.width, viewport.height);
+            ctx.clip();
+
+            const tierSkills = getSkillsForTier(selectedSkillTier);
+            if (!unlockedSkillTiers[selectedSkillTier] || tierSkills.length === 0) {
+                ctx.fillStyle = "#cbd5e1";
+                ctx.font = "15px Georgia, serif";
+                ctx.textAlign = "center";
+                const message = !unlockedSkillTiers[selectedSkillTier]
+                    ? `Unlock ${skillTierSettings[selectedSkillTier].name} to access its skills.`
+                    : `No skills in this tier yet. Add skills to player.skills with tier: ${selectedSkillTier}.`;
+                ctx.fillText(message, viewport.x + viewport.width / 2, viewport.y + 35);
+            }
+
+            tierSkills.forEach(([, skill], index) => {
+                const cardW = 440, cardH = 100;
+                const col = index % 2, row = Math.floor(index / 2);
+                const cardX = mx + 35 + col * 470;
+                const cardY = viewport.y + row * rowHeight - skillTreeScrollY;
+                const isVisible = cardY + cardH > viewport.y && cardY < viewport.y + viewport.height;
+                if (!isVisible) return;
+
+                const isHovered = mouse.x >= cardX && mouse.x <= cardX + cardW &&
+                    mouse.y >= Math.max(cardY, viewport.y) &&
+                    mouse.y <= Math.min(cardY + cardH, viewport.y + viewport.height);
+                const cost = getSkillCost(skill);
+
+                ctx.fillStyle = isHovered ? "#3f3224" : "#221e1a";
+                ctx.fillRect(cardX, cardY, cardW, cardH);
+                ctx.strokeStyle = "#d4af37"; ctx.lineWidth = 2;
+                ctx.strokeRect(cardX, cardY, cardW, cardH);
+
+                ctx.textAlign = "left";
+                ctx.fillStyle = "#fff"; ctx.font = "bold 15px Georgia, serif";
+                ctx.fillText(skill.name, cardX + 16, cardY + 25);
+                ctx.fillStyle = "#cbd5e1"; ctx.font = "12px Georgia, serif";
+                ctx.fillText(skill.desc, cardX + 16, cardY + 48);
+                ctx.fillStyle = "#d4af37"; ctx.font = "bold 13px Georgia, serif";
+                const isMaxed = gameMode !== 'arcade' && skill.rank >= skill.maxRank;
+                const maxRankLabel = gameMode === 'arcade' || skill.maxRank === Infinity
+                    ? '∞'
+                    : skill.maxRank;
+                ctx.fillText(`Rank: ${skill.rank} / ${maxRankLabel}`, cardX + 16, cardY + 76);
+                ctx.textAlign = "right";
+                ctx.fillStyle = "#38bdf8";
+                ctx.fillText(isMaxed ? "MAXED" : `Cost: 🪙 ${cost}`, cardX + cardW - 16, cardY + 76);
+
+                if (mouse.clicked && isHovered && !isMaxed && player.gold >= cost) {
+                    player.gold -= cost;
+                    skill.rank++;
+                    if (skill.effects?.maxHp) {
+                        player.maxHp += skill.effects.maxHp;
+                        player.hp += skill.effects.maxHp;
+                    }
+                    if (skill.effects?.maxMana) {
+                        player.maxMana += skill.effects.maxMana;
+                        player.mana += skill.effects.maxMana;
+                    }
+                    if (skill.effects?.heal) {
+                        player.hp = Math.min(player.maxHp, player.hp + skill.effects.heal);
+                    }
+                    if (skill.effects?.gold) {
+                        player.gold += skill.effects.gold;
+                    }
+                }
+            });
+            ctx.restore();
+
+            ctx.fillStyle = "#27272a";
+            ctx.fillRect(track.x, track.y, track.width, track.height);
+            ctx.fillStyle = "#d4af37";
+            ctx.fillRect(track.x, thumbY, track.width, thumbHeight);
+            ctx.strokeStyle = "#fef3c7";
+            ctx.strokeRect(track.x, thumbY, track.width, thumbHeight);
+
+            drawButton(canvas.width / 2 - 90, my + modalH - 50, 180, 38, "#166534", "#fff", "RESUME", () => {
+                closeSkillTree();
+            });
+        }
+
+        function drawMilestoneRewardScreen() {
+            drawGameScene();
+            ctx.fillStyle = "rgba(9, 9, 14, 0.88)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const modalW = 1000, modalH = 350;
+            const mx = (canvas.width - modalW) / 2, my = (canvas.height - modalH) / 2;
+            ctx.fillStyle = "#1e1b18";
+            ctx.fillRect(mx, my, modalW, modalH);
+            ctx.strokeStyle = "#d4af37";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(mx, my, modalW, modalH);
+
+            ctx.textAlign = "center";
+            ctx.fillStyle = "#d4af37";
+            ctx.font = "bold 30px Georgia, serif";
+            ctx.fillText("MILESTONE REWARD", canvas.width / 2, my + 48);
+            ctx.fillStyle = "#cbd5e1";
+            ctx.font = "15px Georgia, serif";
+            ctx.fillText("Choose one reward", canvas.width / 2, my + 78);
+
+            const cardY = my + 105, cardW = 290, cardH = 205, gap = 20;
+            const rewards = [
+                sidekickUnlocked
+                    ? { id: "mapSize", title: "EXPAND THE MAP", description: ["Increase map width and height", "by 25%; enemy spawns +25%."] }
+                    : { id: "sidekick", title: "ROYAL SIDEKICK", description: ["Fires a copy of each spell", "whenever you cast it."] },
+                { id: "gold", title: "1,000 GOLD", description: ["Add 1,000 gold to your", "treasury immediately."] },
+                { id: "shield", title: "PROJECTILE SHIELD", description: ["Blocks damage from enemy", "projectiles and boulders."] }
+            ];
+            rewards.forEach((reward, index) => {
+                const cardX = mx + 35 + index * (cardW + gap);
+                ctx.fillStyle = "#29231d";
+                ctx.fillRect(cardX, cardY, cardW, cardH);
+                ctx.strokeStyle = "#8b6b27";
+                ctx.lineWidth = 1;
+                ctx.strokeRect(cardX, cardY, cardW, cardH);
+                ctx.fillStyle = "#fef3c7";
+                ctx.font = "bold 16px Georgia, serif";
+                ctx.fillText(reward.title, cardX + cardW / 2, cardY + 38);
+                ctx.fillStyle = "#cbd5e1";
+                ctx.font = "13px Georgia, serif";
+                reward.description.forEach((line, lineIndex) => {
+                    ctx.fillText(line, cardX + cardW / 2, cardY + 75 + lineIndex * 20);
+                });
+                drawButton(cardX + 45, cardY + 140, cardW - 90, 42, "#5c4033", "#fff", "CHOOSE", () => {
+                    chooseMilestoneReward(reward.id);
+                });
+            });
+        }
+
+        function drawPauseScreen() {
+            ctx.fillStyle = "rgba(9, 9, 14, 0.85)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            let modalW = 450, modalH = 480;
+            let mx = (canvas.width - modalW) / 2, my = (canvas.height - modalH) / 2;
+
+            ctx.fillStyle = "#1e1b18"; ctx.fillRect(mx, my, modalW, modalH);
+            ctx.strokeStyle = "#d4af37"; ctx.lineWidth = 3; ctx.strokeRect(mx, my, modalW, modalH);
+
+            ctx.textAlign = "center"; ctx.fillStyle = "#fff"; ctx.font = "bold 32px Georgia, serif";
+            ctx.fillText("REALM PAUSED", canvas.width / 2, my + 60);
+
+            drawButton(canvas.width / 2 - 100, my + 100, 200, 45, "#5c4033", "#fff", "RESUME", () => gameState = 'PLAYING');
+            drawButton(canvas.width / 2 - 100, my + 160, 200, 45, "#991b1b", "#fff", "RESTART GAME", () => startNewGame());
+            drawButton(canvas.width / 2 - 100, my + 220, 200, 45, "#4e3d2a", "#fff", "CONTROLS",
+                () => openControlsMenu('PAUSED'));
+            drawButton(canvas.width / 2 - 100, my + 280, 200, 45, "#3f3224", "#fff", "AUDIO SETTINGS",
+                () => openAudioSettings('PAUSED'));
+            drawButton(canvas.width / 2 - 100, my + 340, 200, 45, "#166534", "#fff",
+                communityUser ? "SIGN OUT" : "LOG IN", handleAccountButton);
+            drawButton(canvas.width / 2 - 100, my + 400, 200, 45, "#3f3224", "#fff", "MAIN MENU", () => gameState = 'MENU');
+        }
+
+        function drawEndScreen(title, subtitle, btnText, callback) {
+            ctx.fillStyle = "rgba(9, 9, 14, 0.95)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.textAlign = "center";
+            ctx.fillStyle = title.includes("VICTORY") ? "#22c55e" : "#ef4444";
+            ctx.font = "bold 45px Georgia, serif"; ctx.fillText(title, canvas.width / 2, 220);
+            ctx.fillStyle = "#cbd5e1"; ctx.font = "20px Georgia, serif";
+            ctx.fillText(subtitle, canvas.width / 2, 280);
+            ctx.fillText(`Final Score: ${score} | Gold: 🪙 ${player.gold}`, canvas.width / 2, 320);
+            ctx.fillText(`Time: ${formatElapsedTime(runElapsedMs)}`, canvas.width / 2, 355);
+            drawButton(canvas.width / 2 - 100, 390, 200, 50, "#5c4033", "#fff", btnText, callback);
+        }
+
+        function drawButton(x, y, w, h, bgColor, textColor, text, onClick) {
+            let isHovered = mouse.x > x && mouse.x < x + w && mouse.y > y && mouse.y < y + h;
+            ctx.fillStyle = isHovered ? "#7a523e" : bgColor;
+            ctx.fillRect(x, y, w, h);
+            ctx.strokeStyle = "#d4af37"; ctx.lineWidth = 2; ctx.strokeRect(x, y, w, h);
+            ctx.fillStyle = textColor; ctx.font = "bold 15px Georgia, serif";
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillText(text, x + w / 2, y + h / 2);
+            ctx.textBaseline = "alphabetic";
+            if (mouse.clicked && isHovered) {
+                playSoundEffect(520, 0.07, 0.055, "triangle");
+                onClick();
+            }
+        }
+
+        let previousFrameTime = null;
+        let fpsSampleStart = null;
+        let fpsFrameCount = 0;
+        let fps = 0;
+        function loop(timestamp) {
+            const deltaTime = previousFrameTime === null ? 0 : timestamp - previousFrameTime;
+            previousFrameTime = timestamp;
+            if (runTimerActive) {
+                if (gameState === 'MENU' || gameState === 'GAMEOVER' || gameState === 'VICTORY') {
+                    runTimerActive = false;
+                } else {
+                    runElapsedMs += deltaTime;
+                }
+            }
+            updateMusic();
+            fpsFrameCount++;
+            if (fpsSampleStart === null) fpsSampleStart = timestamp;
+            if (timestamp - fpsSampleStart >= 500) {
+                fps = Math.round(fpsFrameCount * 1000 / (timestamp - fpsSampleStart));
+                fpsFrameCount = 0;
+                fpsSampleStart = timestamp;
+            }
+
+            if (gameState === 'MENU') {
+                drawMenu();
+            } else if (gameState === 'CONTROLS') {
+                drawControlsMenu();
+            } else if (gameState === 'DIFFICULTY') {
+                drawDifficultyMenu();
+            } else if (gameState === 'AUDIO') {
+                drawAudioSettings();
+            } else if (gameState === 'PLAYING') {
+                if (!showBuildModal) updateGame(deltaTime);
+                drawGameScene();
+            } else if (gameState === 'INTERMISSION') {
+                // Auto-pauses gameplay updates during intermission screen
+                drawIntermissionScreen();
+                if (showBuildModal) drawBuildModal();
+            } else if (gameState === 'PAUSED') {
+                drawGameScene();
+                drawPauseScreen();
+            } else if (gameState === 'SKILLTREE') {
+                // Auto-pauses gameplay updates while skill tree is open
+                drawGameScene();
+                drawSkillTree();
+            } else if (gameState === 'MILESTONE_REWARD') {
+                drawMilestoneRewardScreen();
+            } else if (gameState === 'GAMEOVER') {
+                drawEndScreen("DEFEAT", "Your crown was seized by the rival kingdom.", "TRY AGAIN", () => startNewGame());
+                drawButton(canvas.width / 2 - 100, 490, 200, 50, "#5c4033", "#fff", "RETURN TO MENU", () => gameState = 'MENU');
+            } else if (gameState === 'VICTORY') {
+                drawEndScreen("VICTORY!", "You successfully crushed the rival kingdom and united the realm!", "PLAY AGAIN", () => startNewGame());
+                drawButton(canvas.width / 2 - 100, 700, 200, 50, "#5c4033", "#fff", "RETURN TO MENU", () => gameState = 'MENU');
+            }
+
+            // If build modal is toggled open during gameplay, pause background game updates
+            if (showBuildModal && gameState === 'PLAYING') {
+                drawGameScene(); // draws scene and build modal on top without updating game enemies/player position
+            }
+
+            syncCommunitySidebar();
+            ctx.fillStyle = "rgba(9, 9, 14, 0.75)";
+            ctx.fillRect(canvas.width - 105, 12, 88, 30);
+            ctx.fillStyle = "#f3f4f6";
+            ctx.font = "15px Georgia, serif";
+            ctx.textAlign = "right";
+            ctx.fillText(`FPS: ${fps}`, canvas.width - 25, 32);
+            ctx.textAlign = "left";
+
+            mouse.clicked = false;
+            requestAnimationFrame(loop);
+        }
+
+        initializeCommunity();
+        requestAnimationFrame(loop);
+
+    </script>
+</body>
+</html>
