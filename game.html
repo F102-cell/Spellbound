@@ -190,6 +190,12 @@
             color: #94a3b8;
             font-size: 10px;
         }
+        .community-action-status {
+            min-height: 16px;
+            margin: 0;
+            color: #fbbf24;
+            font-size: 12px;
+        }
         .community-section form {
             display: flex;
             flex-direction: column;
@@ -381,6 +387,8 @@
                         <h3>Community Posts</h3>
                         <small id="community-account"></small>
                     </div>
+                    <p id="community-post-status" class="community-action-status"
+                        role="status" aria-live="polite"></p>
                     <p id="community-posts-sign-in" class="community-entry community-sign-in-prompt" hidden>
                         Sign in to browse and publish community posts.
                     </p>
@@ -402,6 +410,8 @@
                     <div class="community-section-header">
                         <h3>Live Chat</h3>
                     </div>
+                    <p id="community-chat-status" class="community-action-status"
+                        role="status" aria-live="polite"></p>
                     <div id="community-chat-list" class="community-entry-list" aria-live="polite"></div>
                     <p id="community-chat-sign-in" class="community-entry community-sign-in-prompt" hidden>
                         Sign in to read and send live chat messages.
@@ -752,6 +762,8 @@
 
         function setCommunityStatus(message) {
             document.getElementById("community-status").textContent = message;
+            document.getElementById("community-post-status").textContent = message;
+            document.getElementById("community-chat-status").textContent = message;
         }
 
         function setLeaderboardStatus(message) {
@@ -1228,6 +1240,7 @@
             }
         });
         document.getElementById("community-post-form").addEventListener("submit", async (event) => {
+            const form = event.currentTarget;
             event.preventDefault();
             const body = document.getElementById("community-post-input").value.trim();
             if (!body) {
@@ -1240,7 +1253,7 @@
                     body
                 });
                 if (error) throw error;
-                event.currentTarget.reset();
+                form.reset();
                 setCommunityStatus("Post published.");
                 await loadCommunityPosts();
             } catch (error) {
@@ -1248,6 +1261,7 @@
             }
         });
         document.getElementById("community-chat-form").addEventListener("submit", async (event) => {
+            const form = event.currentTarget;
             event.preventDefault();
             const body = document.getElementById("community-chat-input").value.trim();
             if (!body) {
@@ -1260,7 +1274,7 @@
                     body
                 });
                 if (error) throw error;
-                event.currentTarget.reset();
+                form.reset();
                 setCommunityStatus("Message sent.");
                 await loadCommunityMessages();
             } catch (error) {
