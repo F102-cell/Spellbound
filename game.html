@@ -46,6 +46,7 @@
         #community-panel[hidden],
         #community-auth-view[hidden],
         #community-sidebar[hidden],
+        #multiplayer-sidebar[hidden],
         .community-section[hidden] {
             display: none;
         }
@@ -142,26 +143,45 @@
             color: #fbbf24;
             font-size: 13px;
         }
-        #community-sidebar {
+        #community-sidebar,
+        #multiplayer-sidebar {
             position: absolute;
-            inset: 4px;
+            inset: 0;
             z-index: 2;
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
+            align-items: stretch;
             gap: 12px;
-            padding: 12px;
+            padding: 34px;
             box-sizing: border-box;
-            pointer-events: none;
+            background: rgba(9, 9, 14, 0.98);
+            pointer-events: auto;
             color: #e2e8f0;
             font-family: Georgia, serif;
         }
         .community-sidebar-column {
-            width: min(30%, 380px);
+            width: min(90%, 1000px);
             min-width: 0;
             display: flex;
             flex-direction: column;
             gap: 8px;
             pointer-events: auto;
+        }
+        .community-view-tabs {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+        }
+        .community-view-tab {
+            border: 1px solid #d4af37;
+            background: #2c2219;
+            color: #fff;
+            padding: 8px 6px;
+            font: bold 12px Georgia, serif;
+            cursor: pointer;
+        }
+        .community-view-tab[aria-selected="true"] {
+            background: #5c4033;
         }
         .community-sidebar-toggle {
             align-self: flex-start;
@@ -268,6 +288,61 @@
             color: #94a3b8;
             font-size: 12px;
         }
+        .online-layout {
+            min-height: 0;
+            flex: 1;
+            display: grid;
+            grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+            gap: 10px;
+        }
+        .online-panel {
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .online-mode-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+        }
+        .online-mode,
+        .online-difficulty {
+            border: 1px solid #d4af37;
+            background: #2c2219;
+            color: #fff;
+            padding: 8px 5px;
+            font: bold 12px Georgia, serif;
+            cursor: pointer;
+        }
+        .online-mode[aria-pressed="true"],
+        .online-difficulty[aria-pressed="true"] {
+            background: #166534;
+        }
+        .online-difficulties,
+        .online-player-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .online-player-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 8px;
+            align-items: center;
+        }
+        .online-player-actions button {
+            border: 1px solid #d4af37;
+            background: #5c4033;
+            color: #fff;
+            padding: 5px 7px;
+            font: bold 11px Georgia, serif;
+            cursor: pointer;
+        }
+        .online-player-actions .online-block {
+            border-color: #ef4444;
+            background: #7f1d1d;
+        }
         .community-section form[hidden],
         .community-sign-in-prompt[hidden] {
             display: none;
@@ -300,6 +375,10 @@
             #community-sidebar {
                 padding: 6px;
                 gap: 6px;
+            }
+            .online-layout {
+                grid-template-columns: 1fr;
+                overflow-y: auto;
             }
             .community-sidebar-column { width: 36%; }
             .community-sidebar-toggle { padding: 6px; font-size: 11px; }
@@ -353,8 +432,18 @@
         </section>
         <div id="community-sidebar" aria-label="Community" hidden>
             <div class="community-sidebar-column">
-                <button id="leaderboard-toggle" class="community-sidebar-toggle" type="button"
-                    aria-expanded="true" aria-controls="leaderboard-section">Hide Leaderboard</button>
+                <div class="community-section-header">
+                    <h2>Community</h2>
+                    <button id="community-sidebar-close" type="button">Close</button>
+                </div>
+                <div class="community-view-tabs" role="tablist" aria-label="Community views">
+                    <button class="community-view-tab" type="button" role="tab"
+                        data-community-view="leaderboard" aria-selected="true">Leaderboard</button>
+                    <button class="community-view-tab" type="button" role="tab"
+                        data-community-view="posts" aria-selected="false">Community Posts</button>
+                    <button class="community-view-tab" type="button" role="tab"
+                        data-community-view="chat" aria-selected="false">Live Chat</button>
+                </div>
                 <section id="leaderboard-section" class="community-section" aria-label="Rounds mode leaderboard">
                     <div class="community-section-header">
                         <h3>Rounds Leaderboard</h3>
@@ -376,12 +465,6 @@
                         <div id="leaderboard-list" class="community-entry-list" aria-live="polite"></div>
                     </div>
                 </section>
-            </div>
-            <div class="community-sidebar-column">
-                <button id="community-posts-toggle" class="community-sidebar-toggle"
-                    type="button" aria-expanded="true" aria-controls="community-posts-section">
-                    Hide Posts
-                </button>
                 <section id="community-posts-section" class="community-section" aria-label="Community posts">
                     <div class="community-section-header">
                         <h3>Community Posts</h3>
@@ -402,11 +485,7 @@
                     </form>
                     <div id="community-post-list" class="community-entry-list" aria-live="polite"></div>
                 </section>
-                <button id="community-chat-toggle" class="community-sidebar-toggle"
-                    type="button" aria-expanded="true" aria-controls="community-chat-section">
-                    Hide Chat
-                </button>
-                <section id="community-chat-section" class="community-section" aria-label="Community chat">
+                <section id="community-chat-section" class="community-section" aria-label="Community chat" hidden>
                     <div class="community-section-header">
                         <h3>Live Chat</h3>
                     </div>
@@ -424,6 +503,58 @@
                         </label>
                         <button type="submit">Send Message</button>
                     </form>
+                </section>
+            </div>
+        </div>
+        <div id="multiplayer-sidebar" aria-label="Multiplayer" hidden>
+            <div class="community-sidebar-column">
+                <div class="community-section-header">
+                    <h2>Multiplayer</h2>
+                    <button id="multiplayer-sidebar-close" type="button">Close</button>
+                </div>
+                <section id="online-section" class="community-section" aria-label="Online players">
+                    <div class="community-section-header">
+                        <h3>Online &amp; Matchmaking</h3>
+                        <small id="online-status">Choose a mode</small>
+                    </div>
+                    <div class="online-layout">
+                        <div class="online-panel">
+                            <strong>Match Mode</strong>
+                            <div class="online-mode-grid">
+                                <button class="online-mode" type="button" data-online-mode="duel"
+                                    aria-pressed="true">1 vs 1</button>
+                                <button class="online-mode" type="button" data-online-mode="co-op"
+                                    aria-pressed="false">Team vs Difficulty (4 max)</button>
+                                <button class="online-mode" type="button" data-online-mode="ffa"
+                                    aria-pressed="false">Free-for-All (vs Other Players)</button>
+                            </div>
+                            <strong>Difficulty</strong>
+                            <div class="online-difficulties">
+                                <button class="online-difficulty" type="button" data-online-difficulty="easy"
+                                    aria-pressed="false">Easy</button>
+                                <button class="online-difficulty" type="button" data-online-difficulty="normal"
+                                    aria-pressed="true">Normal</button>
+                                <button class="online-difficulty" type="button" data-online-difficulty="hard"
+                                    aria-pressed="false">Hard</button>
+                                <button class="online-difficulty" type="button" data-online-difficulty="extreme"
+                                    aria-pressed="false">Extreme</button>
+                                <button class="online-difficulty" type="button" data-online-difficulty="impossible"
+                                    aria-pressed="false">Impossible</button>
+                            </div>
+                            <button id="online-find-match" type="button">Find Match</button>
+                            <button id="online-cancel-match" type="button" hidden>Cancel Matchmaking</button>
+                            <p id="online-match-status" class="community-action-status"></p>
+                        </div>
+                        <div class="online-panel">
+                            <strong>Players &amp; Friends</strong>
+                            <input id="online-player-search" type="search"
+                                maxlength="20" placeholder="Search username"
+                                style="box-sizing:border-box;width:100%;padding:8px;">
+                            <div id="online-player-list" class="community-entry-list"></div>
+                            <strong>Friend Requests</strong>
+                            <div id="online-request-list" class="community-entry-list"></div>
+                        </div>
+                    </div>
                 </section>
             </div>
         </div>
@@ -455,6 +586,9 @@
         let runTimerActive = false;
         let selectedLeaderboardDifficulty = "normal";
         let communityOpen = false;
+        let communitySidebarOpen = false;
+        let multiplayerSidebarOpen = false;
+        let communityAccountReturn = false;
         let difficulty = 'normal';
         let gameMode = 'Rounds';
         let arcadeElapsedMs = 0;
@@ -515,9 +649,9 @@
         const difficultySettings = {
             easy: { enemyHealth: 0.5, enemySpeed: 0.65, enemyDamage: 0.7, waveSize: 0.8, maxRounds: 10 },
             normal: { enemyHealth: 1, enemySpeed: 1, enemyDamage: 1, waveSize: 1, maxRounds: 20 },
-            hard: { enemyHealth: 2, enemySpeed: 2, enemyDamage: 2, waveSize: 2, maxRounds: 40 },
-            extreme: { enemyHealth: 3, enemySpeed: 3, enemyDamage: 3, waveSize: 3, maxRounds: 60 },
-            impossible: { enemyHealth: 4, enemySpeed: 3, enemyDamage: 7, waveSize: 4, maxRounds: 100 }
+            hard: { enemyHealth: 1.5, enemySpeed: 1, enemyDamage: 1.5, waveSize: 2, maxRounds: 40 },
+            extreme: { enemyHealth: 2, enemySpeed: 1.5, enemyDamage: 2, waveSize: 3, maxRounds: 60 },
+            impossible: { enemyHealth: 3, enemySpeed: 2, enemyDamage: 3, waveSize: 4, maxRounds: 100 }
         };
         let showBuildModal = false;
         let intermissionFrames = 30 * 60;
@@ -533,6 +667,7 @@
             { key: 'spell3', label: "Spell 3 (Bolt)", defaultKey: '3' },
             { key: 'spell4', label: "Spell 4 (Arcane)", defaultKey: '4' },
             { key: 'spell5', label: "Spell 5 (Doom)", defaultKey: '5' },
+            { key: 'spell6', label: "Spell 6 (Inferno)", defaultKey: '6' },
             { key: 'pause', label: "Pause / Play", defaultKey: 'p' },
             { key: 'build', label: "Build Menu", defaultKey: 'b' },
             { key: 'skilltree', label: "Skill Tree", defaultKey: 't' },
@@ -582,6 +717,9 @@
         let communityInitializationPromise = null;
         let communityChannel = null;
         let communityUser = null;
+        let onlineMode = "duel";
+        let onlineDifficulty = "normal";
+        let onlineMatchId = null;
         const musicTracks = {
             menu: [
                 { tempo: 360, wave: "triangle", volume: 0.04,
@@ -1037,8 +1175,7 @@
                 }
                 document.getElementById("community-post-list").replaceChildren();
                 document.getElementById("community-chat-list").replaceChildren();
-                setCommunitySectionVisibility("community-posts-toggle", "community-posts-section", true);
-                setCommunitySectionVisibility("community-chat-toggle", "community-chat-section", true);
+                showCommunityView("leaderboard");
                 syncCommunitySidebar();
                 return;
             }
@@ -1053,6 +1190,18 @@
             document.getElementById("community-account").textContent = `Signed in as ${username}`;
             setCommunityStatus(`Welcome, ${username}.`);
             if (communityOpen) closeCommunity();
+            if (communityAccountReturn) {
+                const accountReturn = communityAccountReturn;
+                communityAccountReturn = false;
+                if (accountReturn === "multiplayer") {
+                    multiplayerSidebarOpen = true;
+                    gameState = "MULTIPLAYER";
+                } else {
+                    communitySidebarOpen = true;
+                    showCommunityView("leaderboard");
+                    gameState = "COMMUNITY";
+                }
+            }
             syncCommunitySidebar();
             if (!userChanged) return;
             connectCommunityFeed();
@@ -1072,6 +1221,21 @@
                     schema: "public",
                     table: "community_messages"
                 }, () => loadCommunityMessages().catch(showCommunityError))
+                .on("postgres_changes", {
+                    event: "*",
+                    schema: "public",
+                    table: "friend_requests"
+                }, () => loadOnlineSocial().catch(showCommunityError))
+                .on("postgres_changes", {
+                    event: "*",
+                    schema: "public",
+                    table: "online_matches"
+                }, () => {
+                    if (onlineMatchId) {
+                        document.getElementById("online-match-status").textContent =
+                            "Match lobby updated.";
+                    }
+                })
                 .subscribe((status) => {
                     if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
                         setCommunityStatus(`Live updates unavailable (${status}). Refresh the page to retry.`);
@@ -1133,6 +1297,294 @@
             }
         }
 
+        async function loadOnlineSocial() {
+            if (!communityUser || !communityClient) return;
+            const list = document.getElementById("online-player-list");
+            const requestList = document.getElementById("online-request-list");
+            const search = document.getElementById("online-player-search").value.trim().toLowerCase();
+            list.replaceChildren();
+            requestList.replaceChildren();
+
+            try {
+                const [{ data: profiles, error: profilesError },
+                    { data: requests, error: requestsError },
+                    { data: blocks, error: blocksError }] = await Promise.all([
+                    communityClient.from("profiles").select("id, username").order("username"),
+                    communityClient.from("friend_requests")
+                        .select("id, requester_id, recipient_id, status, created_at")
+                        .or(`requester_id.eq.${communityUser.id},recipient_id.eq.${communityUser.id}`),
+                    communityClient.from("player_blocks")
+                        .select("blocked_id")
+                        .eq("blocker_id", communityUser.id)
+                ]);
+                if (profilesError) throw profilesError;
+                if (requestsError) throw requestsError;
+                if (blocksError) throw blocksError;
+
+                const userId = communityUser.id;
+                const blockedIds = new Set((blocks || []).map(block => block.blocked_id));
+                const incoming = (requests || []).filter(request =>
+                    request.recipient_id === userId && request.status === "pending");
+                const outgoing = (requests || []).filter(request =>
+                    request.requester_id === userId && request.status === "pending");
+                const accepted = (requests || []).filter(request => request.status === "accepted");
+
+                if (!incoming.length) {
+                    requestList.textContent = "No pending friend requests.";
+                } else {
+                    incoming.forEach(request => {
+                        const profile = (profiles || []).find(player => player.id === request.requester_id);
+                        if (!profile) return;
+                        const row = document.createElement("article");
+                        row.className = "community-entry online-player-row";
+                        const name = document.createElement("strong");
+                        name.textContent = profile.username;
+                        const actions = document.createElement("div");
+                        actions.className = "online-player-actions";
+                        const accept = document.createElement("button");
+                        accept.type = "button";
+                        accept.textContent = "Accept";
+                        accept.addEventListener("click", () => acceptFriendRequest(request));
+                        const decline = document.createElement("button");
+                        decline.type = "button";
+                        decline.textContent = "Decline";
+                        decline.addEventListener("click", () => declineFriendRequest(request));
+                        actions.append(accept, decline);
+                        row.append(name, actions);
+                        requestList.appendChild(row);
+                    });
+                }
+
+                const visibleProfiles = (profiles || []).filter(profile =>
+                    profile.id !== userId &&
+                    !blockedIds.has(profile.id) &&
+                    (!search || profile.username.toLowerCase().includes(search)));
+
+                if (!visibleProfiles.length) {
+                    list.textContent = "No players found.";
+                    return;
+                }
+
+                visibleProfiles.forEach(profile => {
+                    const outgoingRequest = outgoing.find(request => request.recipient_id === profile.id);
+                    const incomingRequest = incoming.find(request => request.requester_id === profile.id);
+                    const friendship = accepted.find(request =>
+                        (request.requester_id === userId && request.recipient_id === profile.id) ||
+                        (request.recipient_id === userId && request.requester_id === profile.id));
+                    const row = document.createElement("article");
+                    row.className = "community-entry online-player-row";
+                    const name = document.createElement("strong");
+                    name.textContent = profile.username;
+                    const actions = document.createElement("div");
+                    actions.className = "online-player-actions";
+
+                    const friendButton = document.createElement("button");
+                    friendButton.type = "button";
+                    if (friendship) {
+                        friendButton.textContent = "Friends";
+                        friendButton.addEventListener("click", () => removeFriend(friendship));
+                    } else if (incomingRequest) {
+                        friendButton.textContent = "Accept";
+                        friendButton.addEventListener("click", () => acceptFriendRequest(incomingRequest));
+                    } else if (outgoingRequest) {
+                        friendButton.textContent = "Request Sent";
+                        friendButton.disabled = true;
+                    } else {
+                        friendButton.textContent = "Add Friend";
+                        friendButton.addEventListener("click", () => sendFriendRequest(profile.id));
+                    }
+
+                    const blockButton = document.createElement("button");
+                    blockButton.type = "button";
+                    blockButton.className = "online-block";
+                    blockButton.textContent = "Block";
+                    blockButton.addEventListener("click", () => blockPlayer(profile.id));
+                    actions.append(friendButton, blockButton);
+                    row.append(name, actions);
+                    list.appendChild(row);
+                });
+            } catch (error) {
+                showCommunityError(error);
+            }
+        }
+
+        async function sendFriendRequest(recipientId) {
+            try {
+                const { data: reverseRequest } = await communityClient.from("friend_requests")
+                    .select("id")
+                    .eq("requester_id", recipientId)
+                    .eq("recipient_id", communityUser.id)
+                    .maybeSingle();
+                if (reverseRequest) throw new Error("This player already sent you a friend request.");
+                const { error } = await communityClient.from("friend_requests").insert({
+                    requester_id: communityUser.id,
+                    recipient_id: recipientId,
+                    status: "pending"
+                });
+                if (error) throw error;
+                await loadOnlineSocial();
+            } catch (error) {
+                showCommunityError(error);
+            }
+        }
+
+        async function acceptFriendRequest(request) {
+            try {
+                const { error } = await communityClient.from("friend_requests")
+                    .update({ status: "accepted", updated_at: new Date().toISOString() })
+                    .eq("id", request.id);
+                if (error) throw error;
+                await loadOnlineSocial();
+            } catch (error) {
+                showCommunityError(error);
+            }
+        }
+
+        async function declineFriendRequest(request) {
+            try {
+                const { error } = await communityClient.from("friend_requests")
+                    .update({ status: "declined", updated_at: new Date().toISOString() })
+                    .eq("id", request.id);
+                if (error) throw error;
+                await loadOnlineSocial();
+            } catch (error) {
+                showCommunityError(error);
+            }
+        }
+
+        async function removeFriend(request) {
+            try {
+                const { error } = await communityClient.from("friend_requests")
+                    .delete().eq("id", request.id);
+                if (error) throw error;
+                await loadOnlineSocial();
+            } catch (error) {
+                showCommunityError(error);
+            }
+        }
+
+        async function blockPlayer(blockedId) {
+            try {
+                const { error: blockError } = await communityClient.from("player_blocks").insert({
+                    blocker_id: communityUser.id,
+                    blocked_id: blockedId
+                });
+                if (blockError) throw blockError;
+                await communityClient.from("friend_requests").delete()
+                    .or(`and(requester_id.eq.${communityUser.id},recipient_id.eq.${blockedId}),and(requester_id.eq.${blockedId},recipient_id.eq.${communityUser.id})`);
+                await loadOnlineSocial();
+            } catch (error) {
+                showCommunityError(error);
+            }
+        }
+
+        async function findOnlineMatch() {
+            if (!communityUser || !communityClient) {
+                document.getElementById("online-match-status").textContent =
+                    "Sign in before matchmaking.";
+                return;
+            }
+            const maxPlayers = onlineMode === "duel" ? 2 : onlineMode === "co-op" ? 4 : 8;
+            document.getElementById("online-match-status").textContent = "Searching for players...";
+            try {
+                const { data: matches, error: matchError } = await communityClient
+                    .from("online_matches")
+                    .select("id, host_id, mode, difficulty, status, max_players")
+                    .eq("mode", onlineMode)
+                    .eq("difficulty", onlineDifficulty)
+                    .eq("status", "waiting")
+                    .order("created_at", { ascending: true })
+                    .limit(20);
+                if (matchError) throw matchError;
+
+                let match = null;
+                for (const candidate of matches || []) {
+                    if (candidate.host_id === communityUser.id) continue;
+                    const { data: players, error: playersError } = await communityClient
+                        .from("online_match_players")
+                        .select("user_id")
+                        .eq("match_id", candidate.id);
+                    if (playersError) throw playersError;
+                    if ((players || []).length < candidate.max_players &&
+                        !(players || []).some(player => player.user_id === communityUser.id)) {
+                        match = candidate;
+                        break;
+                    }
+                }
+
+                if (!match) {
+                    const { data: created, error: createError } = await communityClient
+                        .from("online_matches")
+                        .insert({
+                            host_id: communityUser.id,
+                            mode: onlineMode,
+                            difficulty: onlineDifficulty,
+                            status: "waiting",
+                            max_players: maxPlayers
+                        })
+                        .select("id")
+                        .single();
+                    if (createError) throw createError;
+                    match = created;
+                }
+
+                const { error: joinError } = await communityClient
+                    .from("online_match_players")
+                    .insert({
+                        match_id: match.id,
+                        user_id: communityUser.id,
+                        team: onlineMode === "co-op" ? 1 : null
+                    });
+                if (joinError && joinError.code !== "23505") throw joinError;
+                onlineMatchId = match.id;
+
+                const { data: players } = await communityClient
+                    .from("online_match_players")
+                    .select("user_id")
+                    .eq("match_id", match.id);
+                const playerCount = (players || []).length;
+                if ((onlineMode === "duel" && playerCount >= 2) ||
+                    (onlineMode === "co-op" && playerCount >= maxPlayers) ||
+                    (onlineMode === "ffa" && playerCount >= 2)) {
+                    await communityClient.from("online_matches")
+                        .update({ status: "in_progress", updated_at: new Date().toISOString() })
+                        .eq("id", match.id);
+                    document.getElementById("online-match-status").textContent =
+                        `Match ready: ${playerCount}/${maxPlayers} players (${onlineDifficulty}).`;
+                } else {
+                    document.getElementById("online-match-status").textContent =
+                        `Waiting in lobby: ${playerCount}/${maxPlayers} players.`;
+                }
+                document.getElementById("online-cancel-match").hidden = false;
+                document.getElementById("online-find-match").hidden = true;
+            } catch (error) {
+                showCommunityError(error);
+                document.getElementById("online-match-status").textContent =
+                    error.message || "Could not find a match.";
+            }
+        }
+
+        async function cancelOnlineMatch() {
+            if (!onlineMatchId || !communityClient) return;
+            try {
+                await communityClient.from("online_match_players")
+                    .delete()
+                    .eq("match_id", onlineMatchId)
+                    .eq("user_id", communityUser.id);
+                await communityClient.from("online_matches")
+                    .update({ status: "cancelled", updated_at: new Date().toISOString() })
+                    .eq("id", onlineMatchId)
+                    .eq("host_id", communityUser.id);
+                onlineMatchId = null;
+                document.getElementById("online-cancel-match").hidden = true;
+                document.getElementById("online-find-match").hidden = false;
+                document.getElementById("online-match-status").textContent =
+                    "Matchmaking cancelled.";
+            } catch (error) {
+                showCommunityError(error);
+            }
+        }
+
         function handleAccountButton() {
             if (communityUser) {
                 signOutCommunity();
@@ -1140,7 +1592,36 @@
             }
             communityOpen = true;
             document.getElementById("community-panel").hidden = false;
+            showCommunityView("leaderboard");
             initializeCommunity();
+        }
+
+        function handleCommunityButton() {
+            if (!communityUser) {
+                communityAccountReturn = "community";
+                handleAccountButton();
+                return;
+            }
+            communityOpen = false;
+            document.getElementById("community-panel").hidden = true;
+            communitySidebarOpen = true;
+            showCommunityView("leaderboard");
+            gameState = "COMMUNITY";
+            syncCommunitySidebar();
+        }
+
+        function handleMultiplayerButton() {
+            if (!communityUser) {
+                communityAccountReturn = "multiplayer";
+                handleAccountButton();
+                return;
+            }
+            communityOpen = false;
+            document.getElementById("community-panel").hidden = true;
+            multiplayerSidebarOpen = true;
+            gameState = "MULTIPLAYER";
+            syncCommunitySidebar();
+            loadOnlineSocial();
         }
 
         function closeCommunity() {
@@ -1148,23 +1629,38 @@
             document.getElementById("community-panel").hidden = true;
         }
 
+        function closeCommunitySidebar() {
+            communitySidebarOpen = false;
+            gameState = "MENU";
+            syncCommunitySidebar();
+        }
+
+        function closeMultiplayerSidebar() {
+            multiplayerSidebarOpen = false;
+            gameState = "MENU";
+            syncCommunitySidebar();
+        }
+
         function syncCommunitySidebar() {
             document.getElementById("community-sidebar").hidden =
-                gameState !== "MENU" || communityOpen;
+                gameState !== "COMMUNITY" || !communitySidebarOpen || communityOpen;
+            document.getElementById("multiplayer-sidebar").hidden =
+                gameState !== "MULTIPLAYER" || !multiplayerSidebarOpen || communityOpen;
         }
 
-        function setCommunitySectionVisibility(toggleId, sectionId, visible) {
-            const toggle = document.getElementById(toggleId);
-            document.getElementById(sectionId).hidden = !visible;
-            toggle.setAttribute("aria-expanded", String(visible));
-            toggle.textContent = visible
-                ? (sectionId === "community-posts-section" ? "Hide Posts" : "Hide Chat")
-                : (sectionId === "community-posts-section" ? "Show Posts" : "Show Chat");
-        }
-
-        function toggleCommunitySection(toggleId, sectionId) {
-            const toggle = document.getElementById(toggleId);
-            setCommunitySectionVisibility(toggleId, sectionId, toggle.getAttribute("aria-expanded") !== "true");
+        function showCommunityView(view) {
+            const views = {
+                leaderboard: "leaderboard-section",
+                posts: "community-posts-section",
+                chat: "community-chat-section"
+            };
+            Object.entries(views).forEach(([name, sectionId]) => {
+                document.getElementById(sectionId).hidden = name !== view;
+            });
+            document.querySelectorAll("[data-community-view]").forEach((button) => {
+                button.setAttribute("aria-selected",
+                    String(button.dataset.communityView === view));
+            });
         }
 
         async function signOutCommunity() {
@@ -1181,23 +1677,38 @@
         }
 
         document.getElementById("community-close").addEventListener("click", closeCommunity);
-        document.getElementById("community-posts-toggle").addEventListener("click", () => {
-            toggleCommunitySection("community-posts-toggle", "community-posts-section");
+        document.getElementById("community-sidebar-close").addEventListener("click", closeCommunitySidebar);
+        document.getElementById("multiplayer-sidebar-close").addEventListener("click", closeMultiplayerSidebar);
+        document.querySelectorAll("[data-community-view]").forEach((button) => {
+            button.addEventListener("click", () => showCommunityView(button.dataset.communityView));
         });
-        document.getElementById("community-chat-toggle").addEventListener("click", () => {
-            toggleCommunitySection("community-chat-toggle", "community-chat-section");
+        document.querySelectorAll("[data-online-mode]").forEach((button) => {
+            button.addEventListener("click", () => {
+                onlineMode = button.dataset.onlineMode;
+                document.querySelectorAll("[data-online-mode]").forEach(option => {
+                    option.setAttribute("aria-pressed",
+                        String(option.dataset.onlineMode === onlineMode));
+                });
+            });
         });
+        document.querySelectorAll("[data-online-difficulty]").forEach((button) => {
+            button.addEventListener("click", () => {
+                onlineDifficulty = button.dataset.onlineDifficulty;
+                document.querySelectorAll("[data-online-difficulty]").forEach(option => {
+                    option.setAttribute("aria-pressed",
+                        String(option.dataset.onlineDifficulty === onlineDifficulty));
+                });
+            });
+        });
+        document.getElementById("online-player-search").addEventListener("input", () => {
+            loadOnlineSocial();
+        });
+        document.getElementById("online-find-match").addEventListener("click", findOnlineMatch);
+        document.getElementById("online-cancel-match").addEventListener("click", cancelOnlineMatch);
         document.querySelectorAll("[data-leaderboard-difficulty]").forEach((button) => {
             button.addEventListener("click", () => {
                 selectLeaderboardDifficulty(button.dataset.leaderboardDifficulty);
             });
-        });
-        document.getElementById("leaderboard-toggle").addEventListener("click", (event) => {
-            const toggle = event.currentTarget;
-            const expanded = toggle.getAttribute("aria-expanded") !== "true";
-            document.getElementById("leaderboard-section").hidden = !expanded;
-            toggle.setAttribute("aria-expanded", String(expanded));
-            toggle.textContent = expanded ? "Hide Leaderboard" : "Show Leaderboard";
         });
         document.getElementById("community-auth-view").addEventListener("submit", async (event) => {
             event.preventDefault();
@@ -1223,14 +1734,15 @@
                 const email = document.getElementById("community-email").value.trim();
                 const password = document.getElementById("community-password").value;
                 if (password.length < 8) throw new Error("Use a password with at least 8 characters.");
+                const emailRedirectTo = new URL(window.location.pathname, window.location.origin).href;
                 const { data, error } = await client.auth.signUp({
                     email,
                     password,
-                    options: { data: { username } }
+                    options: { data: { username }, emailRedirectTo }
                 });
                 if (error) throw error;
                 if (!data.session) {
-                    setCommunityStatus("Account created. Check your email to confirm it, then sign in.");
+                    setCommunityStatus("Email confirmation is enabled for this Supabase project. Disable Confirm email in Supabase Authentication settings to let players sign in immediately after creating an account.");
                 } else {
                     setCommunityUser(data.user);
                     setCommunityStatus(`Welcome, ${username}.`);
@@ -1312,6 +1824,12 @@
                     waitingForKeyRebind = null;
                 } else if (communityOpen) {
                     closeCommunity();
+                } else if (communitySidebarOpen) {
+                    closeCommunitySidebar();
+                } else if (multiplayerSidebarOpen) {
+                    closeMultiplayerSidebar();
+                } else if (gameState === "COMMUNITY") {
+                    closeCommunitySidebar();
                 } else if (gameState === 'CONTROLS') {
                     gameState = controlsReturnState;
                 } else if (gameState === 'AUDIO') {
@@ -1456,7 +1974,6 @@
             gold: 3000,
             skills: {
                 // Add new skill entries here with tier: 2 or tier: 3 to place them in those tiers.
-                health: { rank: 0, maxRank: Infinity, baseCost: 100, mult: 1.4, name: "Potion of Healing", desc: "+5 HP", effects: { heal: 5 } },
                 spellDamage: { rank: 0, maxRank: 5, baseCost: 2500, mult: 1.5, name: "Aprentice March", desc: "+50% Spell Dmg", effects: { spellDamage: 0.5, spellDamageRank: 1 } },
                 spellSpeed: { rank: 0, maxRank: 4, baseCost: 110, mult: 1.3, name: "Royal Swiftness", desc: "+10% Spell Speed", effects: { spellSpeed: 0.1 } },
                 spellBurst: { rank: 0, maxRank: 2, baseCost: 1500, mult: 1.4, name: "Royal Surge", desc: "+1 spell per shot per rank", effects: { burstShots: 1 } },
@@ -1464,6 +1981,7 @@
                 manaRegen: { rank: 0, maxRank: 3, baseCost: 2010, mult: 1.3, name: "Crown's Focus", desc: "+0.15 Mana/frame per rank", effects: { manaRegen: 0.15 } },
                 healthRegen: { rank: 0, maxRank: 6, baseCost: 3080, mult: 1.4, name: "Royal Resilience", desc: "+0.5 HP/sec per rank", effects: { healthRegen: 0.5 } },
                 maxHp: { rank: 0, maxRank: 5, baseCost: 155, mult: 1.4, name: "Royal Vitality", desc: "+25 Max HP", effects: { maxHp: 25 } },
+                healingDraught: { rank: 0, maxRank: 5, baseCost: 250, mult: 1.4, name: "Healing Draught", desc: "Restore +25 HP", effects: { heal: 25 } },
                 speed: { rank: 0, maxRank: 3, baseCost: 95, mult: 1.4, name: "Royal Stride", desc: "+Movement Speed", effects: { movementSpeed: 0.3 } },
                 damageReduction: { rank: 0, maxRank: 5, baseCost: 230, mult: 1.5, name: "Royal Guard", desc: "-10% incoming damage per rank", effects: { damageReduction: 0.1 } },
                 towerRange: { rank: 0, maxRank: 3, baseCost: 70, mult: 1.4, name: "Scout Farsight", desc: "+40 Structure Range", effects: { towerRange: 40 } },
@@ -1472,11 +1990,7 @@
                 crystalBonus: { rank: 0, maxRank: 5, baseCost: 135, mult: 1.4, name: "Royal Tribute", desc: "+15 Gold/Kill", effects: { goldPerKill: 15 } },
                 bankInterest: { rank: 0, maxRank: 3, baseCost: 100, mult: 1.5, name: "Imperial Vaults", desc: "+10% Treasury Yield", effects: { bankInterest: 0.1 } },
                 piercing: { rank: 0, maxRank: 3, baseCost: 210, mult: 1.4, name: "Royal Precision", desc: "Pass through 1 enemy; doubles per rank", effects: { piercingRank: 1 } },
-                royalGrant: { rank: 0, maxRank: 5, baseCost: 300, mult: 1.5, name: "Royal Grant", desc: "+500 Gold immediately", effects: { gold: 500 } },
-                healingDraught: { rank: 0, maxRank: 5, baseCost: 250, mult: 1.4, name: "Healing Draught", desc: "Restore +25 HP", effects: { heal: 25 } },
-                manaFlow: { rank: 0, maxRank: 4, baseCost: 350, mult: 1.4, name: "Mana Flow", desc: "+0.25 Mana/frame", effects: { manaRegen: 0.25 } },
-                spellFocus: { rank: 0, maxRank: 4, baseCost: 500, mult: 1.5, name: "Spell Focus", desc: "+15% Spell Dmg", effects: { spellDamage: 0.15 } },
-                sturdyBastion: { rank: 0, maxRank: 3, baseCost: 450, mult: 1.5, name: "Sturdy Bastion", desc: "-5% incoming damage", effects: { damageReduction: 0.05 } },
+                royalGrant: { rank: 0, maxRank: 5, baseCost: 300, mult: 1.5, name: "Royal Grant", desc: "+500 Gold immediately", effects: { gold: + 500} },
 
                 manaCapacityII: { tier: 2, rank: 0, maxRank: 3, baseCost: 5895, mult: 1.4, name: "Master Oogway", desc: "+50 Max Mana per rank", effects: { maxMana: 50 } },
                 manaRegenII: { tier: 2, rank: 0, maxRank: 4, baseCost: 3000, mult: 1.4, name: "More Mana", desc: "+0.5 mana/frame per rank", effects : { manaRegen: 0.5} },
@@ -1528,7 +2042,11 @@
             2: { name: "Frost Shard", color: "#38bdf8", speed: 10, radius: 6, baseDamage: 25, manaCost: 10, cooldown: 120 },
             3: { name: "Royal Bolt", color: "#facc15", speed: 16, radius: 5, baseDamage: 100, manaCost: 20, cooldown: 500 },
             4: { name: "Arcane Surge", color: "#a855f7", speed: 20, radius: 10, baseDamage: 90, manaCost: 25, cooldown: 400 },
-            5: { name: "Doom" ,color: "000000", speed:1, radius: 100, baseDamage: 500, manaCost: 100, cooldown:  12000}
+            5: { name: "Doom" ,color: "000000", speed:1, radius: 100, baseDamage: 500, manaCost: 100, cooldown:  12000},
+            6: { name: "Inferno", color: "#b50808", speed: 5, radius: 15, baseDamage: 150,
+                manaCost: 5, cooldown: 250, coneRange: 125, coneHalfAngle: Math.PI / 6,
+                flameDurationMs: 250, burnDurationMs: 60000, burnDamagePerSecond: 4
+            }
         };
         let currentSpellKey = "1";
         let lastShotTime = 0;
@@ -2386,12 +2904,16 @@
 
         window.addEventListener("keydown", (e) => {
             let k = e.key.toLowerCase();
-            if (!isTextEntryTarget(e.target) && gameState === 'PLAYING') {
+            if (!isTextEntryTarget(e.target) &&
+                ['PLAYING', 'INTERMISSION', 'PAUSED'].includes(gameState)) {
                 if (k === keybinds.spell1) currentSpellKey = "1";
                 if (k === keybinds.spell2) currentSpellKey = "2";
                 if (k === keybinds.spell3) currentSpellKey = "3";
                 if (k === keybinds.spell4) currentSpellKey = "4";
                 if (k === keybinds.spell5) currentSpellKey = "5";
+                if (k === keybinds.spell6 || e.code === "Digit6" || e.code === "Numpad6") {
+                    currentSpellKey = "6";
+                }
             }
         });
 
@@ -2524,11 +3046,30 @@
             }
 
             function shootProjectile(angle, spell, dmg) {
-                const speedMultiplier = 1 + getSkillEffect('spellSpeed');
                 const spellFrequency = { "1": 220, "2": 520, "3": 880, "4": 330, "5": 65 }[currentSpellKey] ?? 440;
                 playSoundEffect(spellFrequency, currentSpellKey === "5" ? 0.22 : 0.055,
                     currentSpellKey === "5" ? 0.1 : 0.04,
                     currentSpellKey === "5" ? "sawtooth" : "sine");
+                if (spell.name === "Inferno") {
+                    const flame = {
+                        x: player.x, y: player.y, angle,
+                        range: spell.coneRange, halfAngle: spell.coneHalfAngle,
+                        remainingMs: spell.flameDurationMs,
+                        burnDurationMs: spell.burnDurationMs,
+                        burnDamagePerSecond: spell.burnDamagePerSecond,
+                        color: spell.color, isInfernoFlame: true, hitEnemies: []
+                    };
+                    projectiles.push(flame);
+                    if (sidekickUnlocked) {
+                        const sidekickPosition = getSidekickPosition();
+                        projectiles.push({
+                            ...flame, x: sidekickPosition.x, y: sidekickPosition.y, hitEnemies: []
+                        });
+                    }
+                    return;
+                }
+
+                const speedMultiplier = 1 + getSkillEffect('spellSpeed');
                 const projectile = {
                     x: player.x, y: player.y,
                     vx: Math.cos(angle) * spell.speed * speedMultiplier,
@@ -2555,7 +3096,34 @@
 
             for (let i = projectiles.length - 1; i >= 0; i--) {
                 let p = projectiles[i];
-                if (p.isEnemyGasCanister) {
+                if (p.isInfernoFlame) {
+                    const elapsedMs = Math.min(deltaTime, p.remainingMs);
+                    p.remainingMs -= deltaTime;
+                    if (elapsedMs <= 0) {
+                        projectiles.splice(i, 1);
+                        continue;
+                    }
+                    for (let j = enemies.length - 1; j >= 0; j--) {
+                        const enemy = enemies[j];
+                        if (p.hitEnemies.includes(enemy)) continue;
+                        const dx = enemy.x - p.x, dy = enemy.y - p.y;
+                        const distance = Math.hypot(dx, dy);
+                        if (distance > p.range + enemy.radius) continue;
+                        const angleToEnemy = Math.atan2(dy, dx);
+                        const angleDifference = Math.atan2(
+                            Math.sin(angleToEnemy - p.angle),
+                            Math.cos(angleToEnemy - p.angle)
+                        );
+                        const targetAnglePadding = Math.asin(
+                            Math.min(1, enemy.radius / Math.max(distance, 1))
+                        );
+                        if (Math.abs(angleDifference) <= p.halfAngle + targetAnglePadding) {
+                            p.hitEnemies.push(enemy);
+                            enemy.burnRemainingMs = p.burnDurationMs;
+                            enemy.burnDamagePerSecond = p.burnDamagePerSecond;
+                        }
+                    }
+                } else if (p.isEnemyGasCanister) {
                     const angle = Math.atan2(p.targetY - p.y, p.targetX - p.x);
                     p.x += Math.cos(angle) * p.speed;
                     p.y += Math.sin(angle) * p.speed;
@@ -2686,6 +3254,13 @@
 
             for (let i = enemies.length - 1; i >= 0; i--) {
                 let e = enemies[i];
+                if (e.burnRemainingMs > 0) {
+                    const burnElapsedMs = Math.min(deltaTime, e.burnRemainingMs);
+                    e.burnRemainingMs -= deltaTime;
+                    e.hp -= e.burnDamagePerSecond * burnElapsedMs / 1000;
+                    checkEnemyDeath(e);
+                    if (e.hp <= 0) continue;
+                }
                 e.update(deltaTime);
 
                 if (Math.hypot(player.x - e.x, player.y - e.y) < player.radius + e.radius) {
@@ -2809,7 +3384,13 @@
 
             projectiles.forEach(p => {
                 ctx.beginPath();
-                if (p.isCatapultBoulder) {
+                if (p.isInfernoFlame) {
+                    ctx.moveTo(p.x, p.y);
+                    ctx.arc(p.x, p.y, p.range, p.angle - p.halfAngle, p.angle + p.halfAngle);
+                    ctx.closePath();
+                    ctx.fillStyle = "rgba(249, 115, 22, 0.45)";
+                    ctx.fill();
+                } else if (p.isCatapultBoulder) {
                     ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
                     ctx.fillStyle = p.color || "#f97316";
                 } else if (p.isGasCanister || p.isEnemyGasCanister) {
@@ -2992,8 +3573,372 @@
             placementClick = false;
         });
 
+        // Home-screen button layout. Adjust x, y, w, h, and radius here.
+        const homeMenuLayout = {
+            start: { x: 200, y: 250, w: 180, h: 275, radius: 18 },
+            mode: { x: 410, y: 250, w: 230, h: 125, radius: 12 },
+            controls: { x: 655, y: 250, w: 230, h: 125, radius: 12 },
+            difficulty: { x: 900, y: 250, w: 230, h: 125, radius: 12 },
+            audio: { x: 410, y: 400, w: 230, h: 125, radius: 12 },
+            community: { x: 655, y: 400, w: 230, h: 125, radius: 12 },
+            account: { x: 900, y: 400, w: 230, h: 125, radius: 12 },
+            multiplayer: { x: 1160, y: 250, w: 180, h: 275, radius: 18 },
+            share: { x: 655, y: 550, w: 230, h: 54, radius: 12 }
+        };
+
+        let shareStatus = "";
+        let shareStatusExpiresAt = 0;
+
+        async function shareSpellbound() {
+            const url = "https://f102-cell.github.io/Spellbound/";
+            const shareData = {
+                title: "Spellbound: King's Realm",
+                text: "Play Spellbound: King's Realm with me!",
+                url
+            };
+
+            try {
+                if (navigator.share) {
+                    await navigator.share(shareData);
+                    shareStatus = "Game link shared.";
+                } else if (navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(url);
+                    shareStatus = "Game link copied!";
+                } else {
+                    const input = document.createElement("textarea");
+                    input.value = url;
+                    input.style.position = "fixed";
+                    input.style.opacity = "0";
+                    document.body.appendChild(input);
+                    input.select();
+                    const copied = document.execCommand("copy");
+                    input.remove();
+                    if (!copied) throw new Error("Could not copy the game link.");
+                    shareStatus = "Game link copied!";
+                }
+            } catch (error) {
+                if (error?.name !== "AbortError") {
+                    shareStatus = `Copy this link: ${url}`;
+                }
+            }
+            shareStatusExpiresAt = performance.now() + 5000;
+        }
+
+        const menuDemo = {
+            ai: { x: canvas.width / 2, y: canvas.height / 2 + 60, hp: 100, maxHp: 100, radius: 18, shootTimerMs: 0, strafeDirection: 1 },
+            enemies: [],
+            projectiles: [],
+            enemyProjectiles: [],
+            enemyGasClouds: [],
+            spawnTimerMs: 0,
+            elapsedMs: 0
+        };
+
+        function getMenuEnemyRangedStats(model) {
+            if (model === "archer") {
+                return { range: 300, cooldown: 1100, damage: 8, speed: 5, color: "#34d399" };
+            }
+            if (model === "crossbow") {
+                return { range: 360, cooldown: 1450, damage: 14, speed: 7, color: "#a3e635" };
+            }
+            if (model === "catapult") {
+                return { range: 440, cooldown: 2400, damage: 22, speed: 4, color: "#f97316", splashRadius: 70 };
+            }
+            if (model === "siege") {
+                return { range: 500, cooldown: 2600, damage: 28, speed: 4, color: "#60a5fa", splashRadius: 85 };
+            }
+            if (model === "warMachine") {
+                return { range: 650, cooldown: 3500, damage: 48, speed: 3.5, color: "#89b819", splashRadius: 140 };
+            }
+            if (model === "gasser") {
+                return { range: 600, cooldown: 5000, damage: 25, speed: 3, color: "#1d85e2", splashRadius: 80 };
+            }
+            if (model === "smurf") {
+                return { range: 550, cooldown: 5000, damage: 25, speed: 3.5, color: "#1d85e2" };
+            }
+            if (model === "champion") {
+                return { range: 600, cooldown: 4000, damage: 60, speed: 3, color: "#facc15", splashRadius: 120 };
+            }
+            return null;
+        }
+
+        function spawnMenuDemoEnemy() {
+            const side = Math.floor(Math.random() * 4);
+            let x, y;
+            if (side === 0) { x = Math.random() * canvas.width; y = -35; }
+            else if (side === 1) { x = canvas.width + 35; y = Math.random() * canvas.height; }
+            else if (side === 2) { x = Math.random() * canvas.width; y = canvas.height + 35; }
+            else { x = -35; y = Math.random() * canvas.height; }
+
+            const variants = [
+                { model: "footman", radius: 15, hp: 55, speed: 0.055, color: "#dc2626" },
+                { model: "scout", radius: 12, hp: 40, speed: 0.082, color: "#ea580c" },
+                { model: "archer", radius: 14, hp: 80, speed: 0.068, color: "#047857" },
+                { model: "knight", radius: 22, hp: 150, speed: 0.036, color: "#7f1d1d" },
+                { model: "crossbow", radius: 18, hp: 120, speed: 0.063, color: "#15803d" },
+                { model: "berserker", radius: 20, hp: 200, speed: 0.045, color: "#b91c1c" },
+                { model: "siege", radius: 30, hp: 300, speed: 0.023, color: "#1e40af" },
+                { model: "catapult", radius: 26, hp: 250, speed: 0.027, color: "#1e3a8a" },
+                { model: "warMachine", radius: 32, hp: 400, speed: 0.018, color: "#4b5563" },
+                { model: "juggernaut", radius: 36, hp: 500, speed: 0.014, color: "#1e293b" },
+                { model: "gasser", radius: 25, hp: 300, speed: 0.050, color: "#b2e43a" },
+                { model: "smurf", radius: 25, hp: 400, speed: 0.090, color: "#12bff3" },
+                { model: "troll", radius: 25, hp: 1000, speed: 0.054, color: "#513c3a" },
+                { model: "alien", radius: 18, hp: 2500, speed: 0.054, color: "#32f64f" },
+                { model: "thanos", radius: 40, hp: 3000, speed: 0.045, color: "#7625c9" },
+                { model: "ultron", radius: 34, hp: 5000, speed: 0.045, color: "#636363" },
+                { model: "champion", radius: 40, hp: 10000, speed: 0.054, color: "#1e289d" },
+                { model: "king", radius: 28, hp: 30000, speed: 0.025, color: "#7e22ce" }
+            ];
+            const variant = variants[Math.floor(Math.random() * variants.length)];
+            menuDemo.enemies.push({
+                x, y, radius: variant.radius, hp: variant.hp, maxHp: variant.hp,
+                speed: variant.speed, color: variant.color, model: variant.model,
+                shootTimerMs: 800 + Math.random() * 900,
+                contactDamageTimerMs: 0
+            });
+        }
+
+        spawnMenuDemoEnemy();
+        spawnMenuDemoEnemy();
+        spawnMenuDemoEnemy();
+
+        function updateMenuDemo(deltaTime) {
+            const ai = menuDemo.ai;
+            menuDemo.elapsedMs += deltaTime;
+            menuDemo.spawnTimerMs += deltaTime;
+
+            if (menuDemo.spawnTimerMs >= 850 && menuDemo.enemies.length < 10) {
+                spawnMenuDemoEnemy();
+                menuDemo.spawnTimerMs = 0;
+            }
+
+            let nearest = null;
+            let nearestDistance = Infinity;
+            menuDemo.enemies.forEach(enemy => {
+                const distance = Math.hypot(enemy.x - ai.x, enemy.y - ai.y);
+                if (distance < nearestDistance) {
+                    nearestDistance = distance;
+                    nearest = enemy;
+                }
+            });
+
+            if (nearest) {
+                const toEnemyX = nearest.x - ai.x;
+                const toEnemyY = nearest.y - ai.y;
+                const toEnemyDistance = Math.max(1, Math.hypot(toEnemyX, toEnemyY));
+                const unitX = toEnemyX / toEnemyDistance;
+                const unitY = toEnemyY / toEnemyDistance;
+                let moveX = 0, moveY = 0;
+
+                if (nearestDistance < 145) {
+                    moveX -= unitX;
+                    moveY -= unitY;
+                } else if (nearestDistance > 230) {
+                    moveX += unitX;
+                    moveY += unitY;
+                } else {
+                    moveX += -unitY * ai.strafeDirection;
+                    moveY += unitX * ai.strafeDirection;
+                }
+
+                ai.x += moveX * 0.11 * deltaTime;
+                ai.y += moveY * 0.11 * deltaTime;
+                ai.shootTimerMs -= deltaTime;
+                if (ai.shootTimerMs <= 0) {
+                    menuDemo.projectiles.push({
+                        x: ai.x, y: ai.y,
+                        vx: unitX * 7.5, vy: unitY * 7.5,
+                        radius: 5, damage: 34, color: "#f97316"
+                    });
+                    ai.shootTimerMs = 260;
+                }
+                if (Math.random() < 0.003) ai.strafeDirection *= -1;
+            }
+
+            ai.x = Math.max(40, Math.min(canvas.width - 40, ai.x));
+            ai.y = Math.max(180, Math.min(canvas.height - 40, ai.y));
+
+            menuDemo.enemies.forEach(enemy => {
+                const dx = ai.x - enemy.x;
+                const dy = ai.y - enemy.y;
+                const distance = Math.max(1, Math.hypot(dx, dy));
+                const unitX = dx / distance;
+                const unitY = dy / distance;
+                const rangedStats = getMenuEnemyRangedStats(enemy.model);
+                if (rangedStats && distance <= rangedStats.range) {
+                    enemy.shootTimerMs -= deltaTime;
+                    if (enemy.shootTimerMs <= 0) {
+                        menuDemo.enemyProjectiles.push({
+                            x: enemy.x, y: enemy.y,
+                            vx: unitX * rangedStats.speed,
+                            vy: unitY * rangedStats.speed,
+                            speed: rangedStats.speed,
+                            targetX: ai.x, targetY: ai.y,
+                            radius: enemy.model === "archer" || enemy.model === "crossbow" ? 4 : 6,
+                            color: rangedStats.color,
+                            damage: rangedStats.damage,
+                            splashRadius: rangedStats.splashRadius,
+                            isCatapultBoulder: Boolean(rangedStats.splashRadius) && enemy.model !== "gasser",
+                            isEnemyGasCanister: enemy.model === "gasser"
+                        });
+                        enemy.shootTimerMs = rangedStats.cooldown;
+                    }
+                } else if (distance > enemy.radius + ai.radius + 8) {
+                    enemy.x += unitX * enemy.speed * deltaTime;
+                    enemy.y += unitY * enemy.speed * deltaTime;
+                }
+
+                if (distance <= enemy.radius + ai.radius) {
+                    enemy.contactDamageTimerMs -= deltaTime;
+                    if (enemy.contactDamageTimerMs <= 0) {
+                        const contactDamage = enemyContactDamage[enemy.model] ?? 0.5;
+                        ai.hp -= contactDamage;
+                        enemy.contactDamageTimerMs = enemyContactDamageIntervalMs;
+                    }
+                } else {
+                    enemy.contactDamageTimerMs = 0;
+                }
+            });
+
+            for (let i = menuDemo.projectiles.length - 1; i >= 0; i--) {
+                const projectile = menuDemo.projectiles[i];
+                projectile.x += projectile.vx * deltaTime / 16.67;
+                projectile.y += projectile.vy * deltaTime / 16.67;
+                let hit = false;
+                for (let j = menuDemo.enemies.length - 1; j >= 0; j--) {
+                    const enemy = menuDemo.enemies[j];
+                    if (Math.hypot(projectile.x - enemy.x, projectile.y - enemy.y) < projectile.radius + enemy.radius) {
+                        enemy.hp -= projectile.damage;
+                        hit = true;
+                        if (enemy.hp <= 0) menuDemo.enemies.splice(j, 1);
+                        break;
+                    }
+                }
+                if (hit || projectile.x < -20 || projectile.x > canvas.width + 20 ||
+                    projectile.y < -20 || projectile.y > canvas.height + 20) {
+                    menuDemo.projectiles.splice(i, 1);
+                }
+            }
+
+            for (let i = menuDemo.enemyProjectiles.length - 1; i >= 0; i--) {
+                const projectile = menuDemo.enemyProjectiles[i];
+                if (projectile.isEnemyGasCanister || projectile.isCatapultBoulder) {
+                    const dx = projectile.targetX - projectile.x;
+                    const dy = projectile.targetY - projectile.y;
+                    const distanceToTarget = Math.hypot(dx, dy);
+                    if (distanceToTarget <= projectile.speed + 1) {
+                    if (projectile.isEnemyGasCanister) {
+                        menuDemo.enemyGasClouds.push({
+                            x: projectile.targetX, y: projectile.targetY,
+                            radius: projectile.splashRadius, remainingMs: 4000, tickTimerMs: 0
+                        });
+                    } else if (Math.hypot(projectile.targetX - ai.x, projectile.targetY - ai.y) < projectile.splashRadius + ai.radius) {
+                        ai.hp -= projectile.damage;
+                    }
+                    menuDemo.enemyProjectiles.splice(i, 1);
+                    } else {
+                    projectile.x += dx / distanceToTarget * projectile.speed * deltaTime / 16.67;
+                    projectile.y += dy / distanceToTarget * projectile.speed * deltaTime / 16.67;
+                    }
+                } else {
+                    projectile.x += projectile.vx * deltaTime / 16.67;
+                    projectile.y += projectile.vy * deltaTime / 16.67;
+                    if (Math.hypot(projectile.x - ai.x, projectile.y - ai.y) < projectile.radius + ai.radius) {
+                    ai.hp -= projectile.damage;
+                    menuDemo.enemyProjectiles.splice(i, 1);
+                    } else if (projectile.x < -20 || projectile.x > canvas.width + 20 ||
+                    projectile.y < -20 || projectile.y > canvas.height + 20) {
+                    menuDemo.enemyProjectiles.splice(i, 1);
+                    }
+                }
+            }
+
+            for (let i = menuDemo.enemyGasClouds.length - 1; i >= 0; i--) {
+                const cloud = menuDemo.enemyGasClouds[i];
+                cloud.remainingMs -= deltaTime;
+                cloud.tickTimerMs += deltaTime;
+                if (cloud.remainingMs <= 0) {
+                    menuDemo.enemyGasClouds.splice(i, 1);
+                }
+            }
+
+            if (ai.hp <= 0) {
+                ai.hp = ai.maxHp;
+                ai.x = canvas.width / 2;
+                ai.y = canvas.height / 2 + 60;
+                menuDemo.enemies = [];
+                menuDemo.projectiles = [];
+                menuDemo.enemyProjectiles = [];
+                menuDemo.enemyGasClouds = [];
+            }
+        }
+
+        function drawMenuDemo() {
+            menuDemo.enemyGasClouds.forEach(cloud => {
+                ctx.beginPath();
+                ctx.arc(cloud.x, cloud.y, cloud.radius, 0, Math.PI * 2);
+                ctx.fillStyle = "rgba(132, 204, 22, 0.22)";
+                ctx.fill();
+                ctx.strokeStyle = "rgba(163, 230, 53, 0.55)";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+
+            menuDemo.enemies.forEach(enemy => {
+                RivalSoldier.prototype.draw.call(enemy);
+            });
+
+            menuDemo.projectiles.forEach(projectile => {
+                ctx.beginPath();
+                ctx.arc(projectile.x, projectile.y, projectile.radius, 0, Math.PI * 2);
+                ctx.fillStyle = projectile.color;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = projectile.color;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            });
+
+            menuDemo.enemyProjectiles.forEach(projectile => {
+                ctx.beginPath();
+                ctx.arc(projectile.x, projectile.y, projectile.isEnemyGasCanister ? 7 : projectile.radius, 0, Math.PI * 2);
+                ctx.fillStyle = projectile.isEnemyGasCanister
+                    ? "#84cc16"
+                    : projectile.isCatapultBoulder
+                        ? projectile.color
+                        : projectile.color || "#ef4444";
+                ctx.fill();
+            });
+
+            const ai = menuDemo.ai;
+            ctx.save();
+            ctx.translate(ai.x, ai.y);
+            ctx.beginPath();
+            ctx.arc(0, 0, ai.radius, 0, Math.PI * 2);
+            ctx.fillStyle = "#4338ca";
+            ctx.shadowBlur = 16;
+            ctx.shadowColor = "#6366f1";
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = "#fbbf24";
+            ctx.stroke();
+            ctx.restore();
+
+            ctx.fillStyle = "#991b1b";
+            ctx.fillRect(ai.x - ai.radius, ai.y - ai.radius - 12, ai.radius * 2, 5);
+            ctx.fillStyle = "#22c55e";
+            ctx.fillRect(ai.x - ai.radius, ai.y - ai.radius - 12,
+                ai.radius * 2 * Math.max(0, ai.hp / ai.maxHp), 5);
+            ctx.fillStyle = "#e5e7eb";
+            ctx.font = "bold 12px Georgia, serif";
+            ctx.textAlign = "center";
+            ctx.fillText("Player 1", ai.x, ai.y - ai.radius - 18);
+        }
+
         function drawMenu() {
-            ctx.fillStyle = "#09090e";
+            drawMenuDemo();
+            ctx.fillStyle = "rgba(9, 9, 14, 0.55)";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             ctx.fillStyle = "#d4af37"; ctx.font = "bold 50px Georgia, serif"; ctx.textAlign = "center";
@@ -3002,15 +3947,47 @@
             ctx.fillStyle = "#94a3b8"; ctx.font = "16px Georgia, serif";
             ctx.fillText("Defend your crown against the rival kingdom, place archers, and master royal spells.", canvas.width / 2, 170);
 
-            drawButton(canvas.width / 2 - 110, 230, 220, 48, "#5c4033", "#fff", "START REIGN", () => startNewGame());
-            drawButton(canvas.width / 2 - 110, 295, 220, 48, "#5c4033", "#fff", `MODE: ${gameMode.toUpperCase()}`, () => {
+            const start = homeMenuLayout.start;
+            drawButton(start.x, start.y, start.w, start.h, "#239d35", "#fff", "START REIGN", () => startNewGame(), start.radius);
+
+            const multiplayer = homeMenuLayout.multiplayer;
+            drawButton(multiplayer.x, multiplayer.y, multiplayer.w, multiplayer.h, "#1341a1", "#fff", "MULTIPLAYER", () => {
+                handleMultiplayerButton();
+            }, multiplayer.radius);
+            const mode = homeMenuLayout.mode;
+            drawButton(mode.x, mode.y, mode.w, mode.h, "#5c4033", "#fff", `MODE: ${gameMode.toUpperCase()}`, () => {
                 gameMode = gameMode === 'Rounds' ? 'arcade' : 'Rounds';
-            });
-            drawButton(canvas.width / 2 - 110, 360, 220, 48, "#5c4033", "#fff", "CONTROLS MENU", () => openControlsMenu('MENU'));
-            drawButton(canvas.width / 2 - 110, 425, 220, 48, "#5c4033", "#fff", "DIFFICULTY", () => gameState = 'DIFFICULTY');
-            drawButton(canvas.width / 2 - 110, 490, 220, 48, "#5c4033", "#fff", "AUDIO SETTINGS", () => openAudioSettings('MENU'));
-            drawButton(canvas.width / 2 - 110, 555, 220, 48, "#166534", "#fff",
-                communityUser ? "SIGN OUT" : "LOG IN", handleAccountButton);
+            }, mode.radius);
+            const controls = homeMenuLayout.controls;
+            drawButton(controls.x, controls.y, controls.w, controls.h, "#5c4033", "#fff",
+                "CONTROLS MENU", () => openControlsMenu('MENU'), controls.radius);
+            const difficultyButton = homeMenuLayout.difficulty;
+            drawButton(difficultyButton.x, difficultyButton.y, difficultyButton.w, difficultyButton.h, "#5c4033", "#fff",
+                "DIFFICULTY", () => gameState = 'DIFFICULTY', difficultyButton.radius);
+
+            const audio = homeMenuLayout.audio;
+            drawButton(audio.x, audio.y, audio.w, audio.h, "#5c4033", "#fff",
+                "AUDIO SETTINGS", () => openAudioSettings('MENU'), audio.radius);
+            const community = homeMenuLayout.community;
+            drawButton(community.x, community.y, community.w, community.h, "#5c4033", "#fff",
+                "COMMUNITY", handleCommunityButton, community.radius);
+            const account = homeMenuLayout.account;
+            drawButton(account.x, account.y, account.w, account.h, "#920000", "#fff",
+                communityUser ? "SIGN OUT" : "LOG IN", () => {
+                    communityAccountReturn = false;
+                    handleAccountButton();
+                }, account.radius);
+            const share = homeMenuLayout.share;
+            drawButton(share.x, share.y, share.w, share.h, "#166534", "#fff",
+                "SHARE GAME", shareSpellbound, share.radius);
+            if (shareStatus && performance.now() < shareStatusExpiresAt) {
+                ctx.fillStyle = "rgba(17, 24, 39, 0.95)";
+                ctx.fillRect(canvas.width / 2 - 275, 620, 550, 48);
+                ctx.fillStyle = "#fbbf24";
+                ctx.font = "16px Georgia, serif";
+                ctx.textAlign = "center";
+                ctx.fillText(shareStatus, canvas.width / 2, 650);
+            }
             ctx.fillStyle = "#94a3b8"; ctx.font = "14px Georgia, serif"; ctx.textAlign = "center";
             ctx.fillText(gameMode === 'arcade'
                 ? "Arcade: king every 6 minutes; champion every 3, except with the king."
@@ -3382,7 +4359,10 @@
             drawButton(canvas.width / 2 - 100, my + 280, 200, 45, "#3f3224", "#fff", "AUDIO SETTINGS",
                 () => openAudioSettings('PAUSED'));
             drawButton(canvas.width / 2 - 100, my + 340, 200, 45, "#166534", "#fff",
-                communityUser ? "SIGN OUT" : "LOG IN", handleAccountButton);
+                communityUser ? "SIGN OUT" : "LOG IN", () => {
+                    communityAccountReturn = false;
+                    handleAccountButton();
+                });
             drawButton(canvas.width / 2 - 100, my + 400, 200, 45, "#3f3224", "#fff", "MAIN MENU", () => gameState = 'MENU');
         }
 
@@ -3399,11 +4379,44 @@
             drawButton(canvas.width / 2 - 100, 390, 200, 50, "#5c4033", "#fff", btnText, callback);
         }
 
-        function drawButton(x, y, w, h, bgColor, textColor, text, onClick) {
-            let isHovered = mouse.x > x && mouse.x < x + w && mouse.y > y && mouse.y < y + h;
-            ctx.fillStyle = isHovered ? "#7a523e" : bgColor;
-            ctx.fillRect(x, y, w, h);
-            ctx.strokeStyle = "#d4af37"; ctx.lineWidth = 2; ctx.strokeRect(x, y, w, h);
+        function darkenButtonColor(color, amount = 0.18) {
+            if (!/^#[0-9a-f]{6}$/i.test(color)) return color;
+            const channels = [1, 3, 5].map(offset =>
+                parseInt(color.slice(offset, offset + 2), 16));
+            const darker = channels.map(channel =>
+                Math.max(0, Math.round(channel * (1 - amount))));
+            return `#${darker.map(channel => channel.toString(16).padStart(2, "0")).join("")}`;
+        }
+
+        function drawButton(x, y, w, h, bgColor, textColor, text, onClick, radius = 0) {
+            const cornerRadius = Math.max(0, Math.min(radius, w / 2, h / 2));
+            let isHovered = mouse.x >= x && mouse.x <= x + w &&
+                mouse.y >= y && mouse.y <= y + h;
+            if (isHovered && cornerRadius > 0) {
+                const left = mouse.x < x + cornerRadius;
+                const right = mouse.x > x + w - cornerRadius;
+                const top = mouse.y < y + cornerRadius;
+                const bottom = mouse.y > y + h - cornerRadius;
+                if ((left || right) && (top || bottom)) {
+                    const centerX = left ? x + cornerRadius : x + w - cornerRadius;
+                    const centerY = top ? y + cornerRadius : y + h - cornerRadius;
+                    isHovered = Math.hypot(mouse.x - centerX, mouse.y - centerY) <= cornerRadius;
+                }
+            }
+            ctx.fillStyle = isHovered ? darkenButtonColor(bgColor) : bgColor;
+            ctx.beginPath();
+            ctx.moveTo(x + cornerRadius, y);
+            ctx.lineTo(x + w - cornerRadius, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + cornerRadius);
+            ctx.lineTo(x + w, y + h - cornerRadius);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - cornerRadius, y + h);
+            ctx.lineTo(x + cornerRadius, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - cornerRadius);
+            ctx.lineTo(x, y + cornerRadius);
+            ctx.quadraticCurveTo(x, y, x + cornerRadius, y);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = "#d4af37"; ctx.lineWidth = 2; ctx.stroke();
             ctx.fillStyle = textColor; ctx.font = "bold 15px Georgia, serif";
             ctx.textAlign = "center"; ctx.textBaseline = "middle";
             ctx.fillText(text, x + w / 2, y + h / 2);
@@ -3438,7 +4451,15 @@
             }
 
             if (gameState === 'MENU') {
+                updateMenuDemo(deltaTime);
                 drawMenu();
+            } else if (gameState === 'MULTIPLAYER') {
+                ctx.fillStyle = "#09090e";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                syncCommunitySidebar();
+            } else if (gameState === 'COMMUNITY') {
+                ctx.fillStyle = "#09090e";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
             } else if (gameState === 'CONTROLS') {
                 drawControlsMenu();
             } else if (gameState === 'DIFFICULTY') {
@@ -3487,6 +4508,7 @@
             requestAnimationFrame(loop);
         }
 
+        showCommunityView("leaderboard");
         initializeCommunity();
         requestAnimationFrame(loop);
 
