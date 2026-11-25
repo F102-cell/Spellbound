@@ -365,6 +365,23 @@
         #online-friendly-fire {
             accent-color: #b91c1c;
         }
+        .online-setting {
+            display: grid;
+            gap: 5px;
+            color: #e2e8f0;
+            font-size: 13px;
+        }
+        .online-setting[hidden] {
+            display: none;
+        }
+        .online-setting select {
+            box-sizing: border-box;
+            width: 100%;
+            padding: 7px;
+            border: 1px solid #d4af37;
+            background: #171717;
+            color: #fff;
+        }
         .online-player-row {
             display: grid;
             grid-template-columns: minmax(0, 1fr) auto;
@@ -561,6 +578,16 @@
                         <p id="online-leaderboard-status-4v4" role="status" aria-live="polite">Loading wins...</p>
                         <div id="online-leaderboard-list-4v4" class="community-entry-list" aria-live="polite"></div>
                     </section>
+                    <section class="online-leaderboard-mode" aria-label="Free-for-all total wins">
+                        <h4>Free-for-all Total Wins</h4>
+                        <p id="online-leaderboard-status-ffa" role="status" aria-live="polite">Loading wins...</p>
+                        <div id="online-leaderboard-list-ffa" class="community-entry-list" aria-live="polite"></div>
+                    </section>
+                    <section class="online-leaderboard-mode" aria-label="Co-op total wins">
+                        <h4>Co-op Total Wins</h4>
+                        <p id="online-leaderboard-status-co-op" role="status" aria-live="polite">Loading wins...</p>
+                        <div id="online-leaderboard-list-co-op" class="community-entry-list" aria-live="polite"></div>
+                    </section>
                 </section>
                 <section id="community-posts-section" class="community-section" aria-label="Community posts">
                     <div class="community-section-header">
@@ -633,12 +660,38 @@
                                     aria-pressed="false">3 vs 3</button>
                                 <button class="online-mode" type="button" data-online-mode="4v4"
                                     aria-pressed="false">4 vs 4</button>
+                                <button class="online-mode" type="button" data-online-mode="ffa"
+                                    aria-pressed="false">Free for All</button>
+                                <button class="online-mode" type="button" data-online-mode="co-op"
+                                    aria-pressed="false">Co-op vs Enemies</button>
                             </div>
+                            <label id="online-capacity-control" class="online-setting" hidden>
+                                Maximum players
+                                <select id="online-player-capacity">
+                                    <option value="2">2 players</option>
+                                    <option value="3">3 players</option>
+                                    <option value="4">4 players</option>
+                                    <option value="5">5 players</option>
+                                    <option value="6">6 players</option>
+                                    <option value="7">7 players</option>
+                                    <option value="8">8 players</option>
+                                </select>
+                            </label>
+                            <label id="online-difficulty-control" class="online-setting" hidden>
+                                Co-op difficulty
+                                <select id="online-coop-difficulty">
+                                    <option value="easy">Easy</option>
+                                    <option value="normal">Normal</option>
+                                    <option value="hard">Hard</option>
+                                    <option value="extreme">Extreme</option>
+                                    <option value="impossible">Impossible</option>
+                                </select>
+                            </label>
                             <label class="online-friendly-fire">
                                 <input id="online-friendly-fire" type="checkbox">
                                 Enable friendly fire
                             </label>
-                            <small>Every multiplayer match starts with an Easy-mode survival round.</small>
+                            <small id="online-mode-help">Team PvP starts with an Easy survival round.</small>
                             <button id="online-find-match" type="button">Find Match</button>
                             <button id="online-create-party" type="button" hidden>Create Private Party Match</button>
                             <button id="online-cancel-match" type="button" hidden>Cancel Matchmaking</button>
@@ -646,6 +699,7 @@
                             <div id="online-match-players" class="community-entry-list" aria-live="polite"></div>
                             <button id="online-ready-up" type="button" hidden>Ready Up</button>
                             <button id="online-unready" type="button" hidden>Unready</button>
+                            <button id="online-start-match" type="button" hidden>Start Match</button>
                         </div>
                         <div class="online-panel">
                             <strong>Players &amp; Friends</strong>
@@ -877,6 +931,7 @@
         let onlinePlayerIds = new Set();
         let onlineMode = "1v1";
         let onlineDifficulty = "easy";
+        let onlinePlayerCapacity = 8;
         let onlineVisibility = "public";
         let onlineFriendlyFire = false;
         let onlineMatchPhase = "easy";
@@ -891,6 +946,11 @@
         let onlineWinRecorded = false;
         let onlineLocalStage = "easy";
         let onlineMatchTeam = null;
+        let onlineCoopWorldHostId = null;
+        let onlineCoopProcessedShotIds = new Set();
+        let onlineCoopProcessedAttackIds = new Set();
+        let onlineCoopGeneratedAttackIds = new Set();
+        let onlineCoopDamageEvents = [];
         let onlineCombatSpawned = false;
         let onlineMatchWon = false;
         let onlineOriginalDifficulty = "normal";
@@ -901,11 +961,14 @@
         let onlineRemoteProjectilePositions = new Map();
         let onlineShotEvents = [];
         const onlineModeSettings = {
-            "1v1": { maxPlayers: 2 },
-            "2v2": { maxPlayers: 4 },
-            "3v3": { maxPlayers: 6 },
-            "4v4": { maxPlayers: 8 }
+            "1v1": { minPlayers: 2, maxPlayers: 2, exactCapacity: true },
+            "2v2": { minPlayers: 4, maxPlayers: 4, exactCapacity: true },
+            "3v3": { minPlayers: 6, maxPlayers: 6, exactCapacity: true },
+            "4v4": { minPlayers: 8, maxPlayers: 8, exactCapacity: true },
+            "ffa": { minPlayers: 2, maxPlayers: 8, variableCapacity: true },
+            "co-op": { minPlayers: 2, maxPlayers: 4, variableCapacity: true }
         };
+        const onlineLeaderboardModes = ["1v1", "2v2", "3v3", "4v4", "ffa", "co-op"];
         let onlineMatchId = null;
         let onlineMatchHostId = null;
         let onlineMatchIsParty = false;
@@ -940,6 +1003,57 @@
                   bass: [98,92.5,87.31,82.41] }
             ]
         };
+
+        function getOnlineMaxPlayers(mode = onlineMode) {
+            const settings = onlineModeSettings[mode];
+            return settings?.variableCapacity ? onlinePlayerCapacity : settings?.maxPlayers;
+        }
+
+        function updateOnlineModeControls(resetCapacity = false) {
+            const settings = onlineModeSettings[onlineMode];
+            const capacityControl = document.getElementById("online-capacity-control");
+            const capacitySelect = document.getElementById("online-player-capacity");
+            const difficultyControl = document.getElementById("online-difficulty-control");
+            const difficultySelect = document.getElementById("online-coop-difficulty");
+            const friendlyFire = document.getElementById("online-friendly-fire");
+            const friendlyFireLabel = friendlyFire.closest("label");
+            const modeHelp = document.getElementById("online-mode-help");
+
+            capacityControl.hidden = !settings?.variableCapacity;
+            if (settings?.variableCapacity) {
+                Array.from(capacitySelect.options).forEach(option => {
+                    const capacity = Number(option.value);
+                    option.hidden = capacity < settings.minPlayers ||
+                        capacity > settings.maxPlayers;
+                    option.disabled = option.hidden;
+                });
+                if (resetCapacity || Number(capacitySelect.value) < settings.minPlayers ||
+                    Number(capacitySelect.value) > settings.maxPlayers) {
+                    onlinePlayerCapacity = onlineMode === "co-op" ? 4 : 8;
+                }
+                capacitySelect.value = String(onlinePlayerCapacity);
+            } else {
+                onlinePlayerCapacity = settings?.maxPlayers || 2;
+            }
+
+            difficultyControl.hidden = onlineMode !== "co-op";
+            difficultySelect.value = onlineDifficulty;
+            const friendlyFireApplies = onlineMode !== "ffa";
+            friendlyFire.disabled = !friendlyFireApplies;
+            friendlyFireLabel.title = friendlyFireApplies
+                ? "Allow players on the same team to damage each other."
+                : "Free-for-all has no teammates, so friendly fire does not apply.";
+            if (!friendlyFireApplies) {
+                onlineFriendlyFire = false;
+                friendlyFire.checked = false;
+            }
+
+            modeHelp.textContent = onlineMode === "co-op"
+                ? "Co-op survival: play the selected difficulty together with up to 4 players."
+                : onlineMode === "ffa"
+                    ? "Free for all: every player is an opponent; up to 8 players."
+                    : "Team PvP starts with an Easy survival round before team combat.";
+        }
 
         function ensureMusicStarted() {
             if (!musicContext) {
@@ -1219,7 +1333,7 @@
         }
 
         function loadOnlineLeaderboards() {
-            return Promise.all(["1v1", "2v2", "3v3", "4v4"].map(mode =>
+            return Promise.all(onlineLeaderboardModes.map(mode =>
                 loadOnlineLeaderboard(mode).catch(error => showOnlineLeaderboardError(error, mode))
             ));
         }
@@ -2063,8 +2177,7 @@
             if (onlineMatchRequestInProgress) return;
 
             const selectedMode = onlineMode;
-            const selectedDifficulty = "easy";
-            const settings = onlineModeSettings[selectedMode];
+            const selectedDifficulty = selectedMode === "co-op" ? onlineDifficulty : "easy";
             onlineVisibility = "private";
             onlineMatchRequestInProgress = true;
             setOnlineMatchSearchLocked(true);
@@ -2077,7 +2190,7 @@
                         mode: selectedMode,
                         difficulty: selectedDifficulty,
                         status: "waiting",
-                        max_players: settings.maxPlayers,
+                        max_players: getOnlineMaxPlayers(selectedMode),
                         is_party: true,
                         friendly_fire: onlineFriendlyFire
                     })
@@ -2208,6 +2321,28 @@
             }
         }
 
+        async function startOnlineMatch() {
+            if (!onlineMatchId || onlineMatchHostId !== communityUser?.id ||
+                !communityClient || !onlineModeSettings[onlineMode]?.variableCapacity) return;
+            const startButton = document.getElementById("online-start-match");
+            startButton.disabled = true;
+            try {
+                const { error } = await communityClient.from("online_matches")
+                    .update({ status: "in_progress", updated_at: new Date().toISOString() })
+                    .eq("id", onlineMatchId)
+                    .eq("host_id", communityUser.id)
+                    .eq("status", "waiting");
+                if (error) throw error;
+                await refreshOnlineMatchStatus();
+            } catch (error) {
+                showCommunityError(error);
+                document.getElementById("online-match-status").textContent =
+                    error.message || "Could not start the match.";
+            } finally {
+                startButton.disabled = false;
+            }
+        }
+
         async function findOnlineMatch() {
             if (onlineVisibility !== "public") {
                 document.getElementById("online-match-status").textContent =
@@ -2235,8 +2370,7 @@
             }
             if (onlineMatchRequestInProgress) return;
             const selectedMode = onlineMode;
-            const selectedDifficulty = "easy";
-            const settings = onlineModeSettings[selectedMode];
+            const selectedDifficulty = selectedMode === "co-op" ? onlineDifficulty : "easy";
             onlineMatchRequestInProgress = true;
             setOnlineMatchSearchLocked(true);
             document.getElementById("online-match-status").textContent = "Searching for players...";
@@ -2246,6 +2380,7 @@
                     .select("id, host_id, mode, difficulty, status, max_players, friendly_fire")
                     .eq("mode", selectedMode)
                     .eq("difficulty", selectedDifficulty)
+                    .eq("max_players", getOnlineMaxPlayers(selectedMode))
                     .eq("friendly_fire", onlineFriendlyFire)
                     .eq("status", "waiting")
                     .eq("is_party", false)
@@ -2285,7 +2420,7 @@
                             mode: selectedMode,
                             difficulty: selectedDifficulty,
                             status: "waiting",
-                            max_players: settings.maxPlayers,
+                            max_players: getOnlineMaxPlayers(selectedMode),
                             friendly_fire: onlineFriendlyFire
                         })
                         .select("id")
@@ -2324,7 +2459,10 @@
         function setOnlineMatchSearchLocked(locked) {
             document.getElementById("online-find-match").disabled = locked;
             document.getElementById("online-create-party").disabled = locked;
-            document.querySelectorAll("[data-online-mode], [data-online-difficulty], [data-online-visibility], #online-friendly-fire")
+            document.querySelectorAll(
+                "[data-online-mode], [data-online-visibility], #online-friendly-fire, " +
+                "#online-player-capacity, #online-coop-difficulty"
+            )
                 .forEach(button => { button.disabled = locked; });
         }
 
@@ -2353,10 +2491,18 @@
                 const playerCount = matchPlayers.length;
                 const readyCount = matchPlayers.filter(player => player.is_ready).length;
                 const settings = onlineModeSettings[match.mode];
-                const canStart = settings && playerCount === match.max_players &&
+                const hasValidPlayerCount = settings &&
+                    playerCount >= settings.minPlayers &&
+                    playerCount <= match.max_players &&
+                    (!settings.exactCapacity || playerCount === match.max_players);
+                const everyPlayerReady = playerCount > 0 &&
                     matchPlayers.every(player => player.is_ready);
+                const canStart = hasValidPlayerCount && everyPlayerReady;
+                const canAutoStart = settings?.exactCapacity &&
+                    playerCount === match.max_players && everyPlayerReady;
 
-                if (match.status === "waiting" && canStart && match.host_id === communityUser.id) {
+                if (match.status === "waiting" && canAutoStart &&
+                    match.host_id === communityUser.id) {
                     const { error: statusError } = await communityClient.from("online_matches")
                         .update({ status: "in_progress", updated_at: new Date().toISOString() })
                         .eq("id", onlineMatchId)
@@ -2388,19 +2534,21 @@
                 });
                 onlineMode = match.mode;
                 onlineDifficulty = match.difficulty;
+                onlinePlayerCapacity = match.max_players;
                 onlineMatchPhase = match.phase || "easy";
+                document.getElementById("online-player-capacity").value =
+                    String(onlinePlayerCapacity);
+                updateOnlineModeControls(false);
                 document.querySelectorAll("[data-online-mode]").forEach(button => {
                     button.setAttribute("aria-pressed", String(button.dataset.onlineMode === onlineMode));
-                });
-                document.querySelectorAll("[data-online-difficulty]").forEach(button => {
-                    button.setAttribute("aria-pressed",
-                        String(button.dataset.onlineDifficulty === onlineDifficulty));
                 });
                 const ownPlayer = matchPlayers.find(player => player.user_id === communityUser.id);
                 const ownPlayerEliminated = ownPlayer &&
                     ["eliminated", "abandoned"].includes(ownPlayer.stage);
                 document.getElementById("online-match-status").textContent =
-                    `${match.mode} · Easy then PvP · Friendly fire ${onlineFriendlyFire ? "on" : "off"} · ` +
+                    `${match.mode === "co-op" ? `${match.difficulty} co-op` :
+                        match.mode === "ffa" ? "Free for all" : `${match.mode} · Easy then PvP`} · ` +
+                    `Friendly fire ${onlineFriendlyFire ? "on" : "off"} · ` +
                     `${playerCount}/${match.max_players} players · ` +
                     `${readyCount}/${playerCount} ready`;
                 document.getElementById("online-find-match").hidden = true;
@@ -2413,6 +2561,10 @@
                     match.status !== "waiting" || !ownPlayer || ownPlayer.is_ready;
                 document.getElementById("online-unready").hidden =
                     match.status !== "waiting" || !ownPlayer || !ownPlayer.is_ready;
+                const startButton = document.getElementById("online-start-match");
+                startButton.hidden = match.status !== "waiting" ||
+                    !settings?.variableCapacity || match.host_id !== communityUser.id ||
+                    !canStart;
                 setOnlineMatchSearchLocked(true);
                 await renderOnlineMatchPlayers(matchPlayers);
                 if (match.status === "finished") {
@@ -2435,13 +2587,21 @@
 
         async function showOnlineMatchResult(winnerTeam, players) {
             const ownPlayer = players.find(player => player.user_id === communityUser?.id);
-            onlineMatchWon = ownPlayer?.team === winnerTeam;
+            onlineMatchWon = onlineMode === "co-op"
+                ? ownPlayer?.stage === "completed"
+                : ownPlayer?.team === winnerTeam;
             if (onlineGameSyncTimer) {
                 clearInterval(onlineGameSyncTimer);
                 onlineGameSyncTimer = null;
             }
-            resetOnlineMatchControls(onlineMatchWon ? "Your team won the multiplayer match." :
-                "Your team lost. Return to the multiplayer menu to play again.");
+            const resultMessage = onlineMode === "co-op"
+                ? onlineMatchWon ? "Your co-op team completed the challenge." :
+                    "Your co-op team did not complete the challenge."
+                : onlineMode === "ffa"
+                    ? onlineMatchWon ? "You won the free-for-all." : "You were eliminated from the free-for-all."
+                    : onlineMatchWon ? "Your team won the multiplayer match." :
+                        "Your team lost. Return to the multiplayer menu to play again.";
+            resetOnlineMatchControls(resultMessage);
             if (onlineMatchWon) {
                 gameState = "VICTORY";
                 multiplayerSidebarOpen = false;
@@ -2451,7 +2611,7 @@
                 gameState = "MULTIPLAYER";
                 multiplayerSidebarOpen = true;
                 document.getElementById("online-match-status").textContent =
-                    "Your team lost. You are back in the multiplayer menu.";
+                    `${resultMessage} You are back in the multiplayer menu.`;
             }
             syncCommunitySidebar();
         }
@@ -2483,10 +2643,18 @@
                     : profile?.username || "Player";
                 const ready = document.createElement("small");
                 ready.className = "online-player-ready";
-                const stageLabel = player.stage === "combat" ? "Ready for PvP" :
+                const stageLabel = onlineMode === "co-op"
+                    ? player.stage === "combat" ? "Fighting enemies" :
+                        player.stage === "completed" ? "Challenge complete" :
+                        player.stage === "eliminated" || player.stage === "abandoned" ? "Out" :
+                            player.is_ready ? "Ready" : "Not ready"
+                    : player.stage === "combat" ? onlineMode === "ffa" ? "In free for all" : "Ready for PvP" :
                     player.stage === "eliminated" || player.stage === "abandoned" ? "Out" :
                         player.is_ready ? "Ready" : "Not ready";
-                ready.textContent = `${player.team ? `Team ${player.team} · ` : ""}${stageLabel}`;
+                const teamLabel = onlineMode === "ffa" ? "FFA" :
+                    onlineMode === "co-op" ? "Co-op" :
+                        player.team ? `Team ${player.team}` : "";
+                ready.textContent = `${teamLabel ? `${teamLabel} · ` : ""}${stageLabel}`;
                 row.append(name, ready);
                 container.appendChild(row);
             });
@@ -2510,6 +2678,7 @@
             document.getElementById("online-create-party").hidden = true;
             document.getElementById("online-ready-up").hidden = true;
             document.getElementById("online-unready").hidden = true;
+            document.getElementById("online-start-match").hidden = true;
             setOnlineMatchSearchLocked(false);
             if (onlineMatchRefreshTimer) {
                 clearInterval(onlineMatchRefreshTimer);
@@ -2528,19 +2697,24 @@
                 onlineMatchRefreshTimer = null;
             }
             onlineMode = match.mode;
-            onlineDifficulty = "easy";
+            onlineDifficulty = match.mode === "co-op" ? match.difficulty : "easy";
             onlineFriendlyFire = Boolean(match.friendly_fire);
             onlineMatchPhase = match.phase || "easy";
             onlineMatchWon = false;
-            onlineLocalStage = "easy";
+            onlineLocalStage = match.mode === "co-op" ? "combat" : "easy";
             onlineMatchTeam = null;
+            onlineCoopWorldHostId = null;
+            onlineCoopProcessedShotIds.clear();
+            onlineCoopProcessedAttackIds.clear();
+            onlineCoopGeneratedAttackIds.clear();
+            onlineCoopDamageEvents = [];
             onlineCombatSpawned = false;
             onlineEliminationHandled = false;
             onlineWinRecorded = false;
             onlineProcessedProjectileIds.clear();
             onlineRemoteProjectilePositions.clear();
             onlineShotEvents = [];
-            difficulty = "easy";
+            difficulty = match.mode === "co-op" ? match.difficulty : "easy";
             gameMode = "Rounds";
             multiplayerSidebarOpen = false;
             communityOpen = false;
@@ -2615,19 +2789,232 @@
                     if (error) throw error;
                     onlineMatchPhase = "combat";
                 }
-                if (onlineMatchPhase === "combat" && onlineLocalStage === "combat" &&
-                    ["PLAYING", "PAUSED", "CONTROLS", "AUDIO"].includes(gameState)) {
-                    prepareOnlineCombat(participants);
-                    checkOnlineMatchWinner(participants);
-                    receiveOnlineProjectiles(participants);
+                if (onlineMatchPhase === "combat") {
+                    if (onlineMode === "co-op") {
+                        if (participants.length > 0 &&
+                            participants.every(participant => !participant.is_alive)) {
+                            const { error } = await communityClient.rpc(
+                                "finish_online_coop_match_if_lost",
+                                { lost_match_id: onlineMatchId }
+                            );
+                            if (error) throw error;
+                            return;
+                        }
+                        syncOnlineCoopWorld(participants);
+                        checkOnlineMatchWinner(participants);
+                        receiveOnlineProjectiles(participants);
+                        if (onlineLocalStage === "combat" &&
+                            onlineCoopWorldHostId === communityUser.id) {
+                            await publishOnlineGameState();
+                        }
+                    } else if (onlineLocalStage === "combat" &&
+                        ["PLAYING", "PAUSED", "CONTROLS", "AUDIO"].includes(gameState)) {
+                        prepareOnlineCombat(participants);
+                        checkOnlineMatchWinner(participants);
+                        receiveOnlineProjectiles(participants);
+                    }
                 }
             } finally {
                 onlineGameSyncInProgress = false;
             }
         }
 
+        function syncOnlineCoopWorld(players) {
+            const activePlayers = players
+                .filter(participant => participant.is_alive && participant.stage === "combat")
+                .map(participant => participant.user_id);
+            onlineCoopWorldHostId = activePlayers.includes(onlineMatchHostId)
+                ? onlineMatchHostId
+                : activePlayers.sort()[0] || null;
+            const activeHost = players.find(participant =>
+                participant.user_id === onlineCoopWorldHostId);
+            const worldHost = activeHost?.game_state?.coop_world
+                ? activeHost
+                : players.filter(participant => participant.game_state?.coop_world)
+                    .sort((left, right) =>
+                        Number(right.game_state.updated_at) - Number(left.game_state.updated_at))[0];
+            const world = worldHost?.game_state?.coop_world;
+            if (!world) return;
+
+            if (worldHost.user_id === communityUser.id &&
+                onlineCoopWorldHostId === communityUser.id) {
+                receiveOnlineCoopPlayerShots(players);
+            } else {
+                applyOnlineCoopWorld(world);
+            }
+            receiveOnlineCoopAttacks(world);
+        }
+
+        function getOnlineCoopTarget(fromX, fromY) {
+            const candidates = [];
+            if (onlineLocalStage === "combat" && player.hp > 0) {
+                candidates.push({ user_id: communityUser?.id, x: player.x, y: player.y });
+            }
+            onlineRemotePlayers.forEach(participant => {
+                const state = participant.game_state;
+                if (!participant.is_alive || participant.stage !== "combat" ||
+                    !Number.isFinite(Number(state?.x)) || !Number.isFinite(Number(state?.y))) return;
+                candidates.push({
+                    user_id: participant.user_id,
+                    x: Number(state.x),
+                    y: Number(state.y)
+                });
+            });
+            return candidates.sort((left, right) =>
+                Math.hypot(left.x - fromX, left.y - fromY) -
+                Math.hypot(right.x - fromX, right.y - fromY))[0] ||
+                { user_id: communityUser?.id, x: player.x, y: player.y };
+        }
+
+        function recordOnlineCoopDamage(userId, damage, attackId) {
+            if (!userId || !attackId || onlineCoopGeneratedAttackIds.has(attackId)) return;
+            onlineCoopGeneratedAttackIds.add(attackId);
+            if (onlineCoopGeneratedAttackIds.size > 2000) {
+                onlineCoopGeneratedAttackIds.clear();
+            }
+            onlineCoopDamageEvents.push({
+                id: attackId,
+                user_id: userId,
+                damage: Math.max(0, Number(damage) || 0),
+                created_at: Date.now()
+            });
+        }
+
+        function applyOnlineCoopWorld(world) {
+            if (!Array.isArray(world.enemies)) return;
+            enemies = world.enemies.map(enemy =>
+                Object.assign(Object.create(RivalSoldier.prototype), enemy));
+            currentRound = Number(world.current_round) || currentRound;
+            maxRounds = Number(world.max_rounds) || maxRounds;
+            waveActive = Boolean(world.wave_active);
+            enemiesRemainingInWave = Number(world.enemies_remaining) || 0;
+            waveTimer = Number(world.wave_timer) || 0;
+            intermissionFrames = Number(world.intermission_frames) || 0;
+            if (Array.isArray(world.gas_clouds)) gasClouds = world.gas_clouds;
+            if (Array.isArray(world.health_oranges)) healthOranges = world.health_oranges;
+            if (Array.isArray(world.enemy_projectiles)) {
+                projectiles = projectiles.filter(projectile => !projectile.isEnemyProjectile)
+                    .concat(world.enemy_projectiles);
+            }
+            if (world.phase === "intermission" && gameState === "PLAYING") {
+                gameState = "INTERMISSION";
+            } else if (world.phase === "playing" && gameState === "INTERMISSION") {
+                gameState = "PLAYING";
+            }
+        }
+
+        function receiveOnlineCoopPlayerShots(players) {
+            for (const participant of players) {
+                if (!participant.is_alive || participant.stage !== "combat" ||
+                    participant.user_id === communityUser.id) continue;
+                const shots = participant.game_state?.projectiles;
+                if (!Array.isArray(shots)) continue;
+                for (const shot of shots) {
+                    if (!shot.id || onlineCoopProcessedShotIds.has(shot.id)) continue;
+                    const createdAt = Number(shot.created_at);
+                    const now = Date.now();
+                    if (!Number.isFinite(createdAt) || now - createdAt > 6000 ||
+                        !Number.isFinite(Number(shot.vx)) ||
+                        !Number.isFinite(Number(shot.vy))) {
+                        onlineCoopProcessedShotIds.add(shot.id);
+                        continue;
+                    }
+                    const ageFrames = Math.max(0, now - createdAt) / (1000 / 60);
+                    projectiles.push({
+                        x: Number(shot.x) + Number(shot.vx) * ageFrames,
+                        y: Number(shot.y) + Number(shot.vy) * ageFrames,
+                        vx: Number(shot.vx),
+                        vy: Number(shot.vy),
+                        radius: Number(shot.radius) || 5,
+                        color: shot.color || "#fbbf24",
+                        damage: Math.max(0, Number(shot.damage) || 0),
+                        piercesRemaining: 0,
+                        hitEnemies: []
+                    });
+                    onlineCoopProcessedShotIds.add(shot.id);
+                }
+            }
+            if (onlineCoopProcessedShotIds.size > 2000) {
+                onlineCoopProcessedShotIds.clear();
+            }
+        }
+
+        function receiveOnlineCoopAttacks(world) {
+            if (onlineLocalStage !== "combat") return;
+            const now = Date.now();
+            for (const projectile of world.enemy_projectiles || []) {
+                if (projectile.target_user_id !== communityUser.id ||
+                    !projectile.id || onlineCoopProcessedAttackIds.has(projectile.id)) continue;
+                const key = `coop-enemy:${projectile.id}`;
+                const previous = onlineRemoteProjectilePositions.get(key);
+                const startX = previous?.x ?? Number(projectile.x);
+                const startY = previous?.y ?? Number(projectile.y);
+                const distance = distanceFromPointToSegment(
+                    player.x, player.y, startX, startY,
+                    Number(projectile.x), Number(projectile.y)
+                );
+                onlineRemoteProjectilePositions.set(key, {
+                    checkedAt: now,
+                    x: Number(projectile.x),
+                    y: Number(projectile.y)
+                });
+                if (distance <= player.radius + (Number(projectile.radius) || 5)) {
+                    onlineCoopProcessedAttackIds.add(projectile.id);
+                    applyPlayerDamage(Number(projectile.damage) || 0);
+                }
+            }
+            for (const event of world.damage_events || []) {
+                if (event.user_id !== communityUser.id || !event.id ||
+                    onlineCoopProcessedAttackIds.has(event.id) ||
+                    now - Number(event.created_at) > 10000) continue;
+                onlineCoopProcessedAttackIds.add(event.id);
+                applyPlayerDamage(Number(event.damage) || 0);
+            }
+            if (onlineCoopProcessedAttackIds.size > 2000) {
+                onlineCoopProcessedAttackIds.clear();
+            }
+        }
+
+        function getOnlineCoopWorldSnapshot() {
+            const now = Date.now();
+            onlineCoopDamageEvents = onlineCoopDamageEvents
+                .filter(event => now - event.created_at < 10000);
+            return {
+                current_round: currentRound,
+                max_rounds: maxRounds,
+                wave_active: waveActive,
+                enemies_remaining: enemiesRemainingInWave,
+                wave_timer: waveTimer,
+                intermission_frames: intermissionFrames,
+                phase: gameState === "INTERMISSION" ? "intermission" : "playing",
+                enemies: enemies.map(enemy => ({ ...enemy })),
+                enemy_projectiles: projectiles
+                    .filter(projectile => projectile.isEnemyProjectile)
+                    .map(projectile => ({ ...projectile })),
+                gas_clouds: gasClouds.map(cloud => ({ ...cloud })),
+                health_oranges: healthOranges.map(orange => ({ ...orange })),
+                damage_events: onlineCoopDamageEvents.map(event => ({ ...event }))
+            };
+        }
+
         function prepareOnlineCombat(players) {
             if (onlineCombatSpawned || !onlineMatchTeam) return;
+            if (onlineMode === "ffa") {
+                const contestants = players
+                    .filter(participant => participant.is_alive)
+                    .map(participant => participant.user_id)
+                    .sort();
+                const playerIndex = contestants.indexOf(communityUser.id);
+                if (playerIndex < 0) return;
+                const angle = playerIndex * Math.PI * 2 / contestants.length;
+                const radius = Math.min(canvas.width, canvas.height) * 0.34;
+                player.x = canvas.width / 2 + Math.cos(angle) * radius;
+                player.y = canvas.height / 2 + Math.sin(angle) * radius;
+                projectiles = [];
+                onlineShotEvents = [];
+                onlineCombatSpawned = true;
+                return;
+            }
             const teammates = players
                 .filter(participant => participant.team === onlineMatchTeam)
                 .map(participant => participant.user_id)
@@ -2643,6 +3030,25 @@
         }
 
         function checkOnlineMatchWinner(players) {
+            if (onlineMode === "co-op") {
+                const activePlayers = players
+                    .filter(participant => participant.is_alive &&
+                        !["eliminated", "abandoned"].includes(participant.stage));
+                if (!activePlayers.length ||
+                    !activePlayers.every(participant => participant.stage === "completed") ||
+                    onlineWinRecorded) return;
+                if (activePlayers.map(participant => participant.user_id).sort()[0] !== communityUser.id) return;
+                onlineWinRecorded = true;
+                communityClient.rpc("record_online_match_win", { won_match_id: onlineMatchId })
+                    .then(({ error }) => {
+                        if (error) throw error;
+                    })
+                    .catch(error => {
+                        onlineWinRecorded = false;
+                        console.error("Could not save co-op match result.", error);
+                    });
+                return;
+            }
             const livingTeams = [...new Set(players
                 .filter(participant => participant.is_alive)
                 .map(participant => participant.team))];
@@ -2665,9 +3071,11 @@
         }
 
         function receiveOnlineProjectiles(players) {
+            if (onlineMode === "co-op" && onlineLocalStage !== "combat") return;
             const now = Date.now();
             players.forEach(participant => {
-                if (!participant.is_alive || (!onlineFriendlyFire &&
+                if (!participant.is_alive || participant.user_id === communityUser.id ||
+                    (!onlineFriendlyFire &&
                     participant.team === onlineMatchTeam)) return;
                 const projectiles = Array.isArray(participant.game_state?.projectiles)
                     ? participant.game_state.projectiles
@@ -2737,12 +3145,18 @@
                 return publishOnlineGameState(true);
             }
             const now = Date.now();
-            if (!force && now - onlineLastStatePublishAt < 200) return;
+            const publishInterval = onlineMode === "co-op" &&
+                onlineCoopWorldHostId === communityUser.id ? 500 : 200;
+            if (!force && now - onlineLastStatePublishAt < publishInterval) return;
             onlineLastStatePublishAt = now;
             onlineStatePublishInProgress = true;
             const projectiles = onlineLocalStage === "combat"
                 ? projectilesForOnlineState()
                 : [];
+            const coopWorld = onlineMode === "co-op" &&
+                onlineCoopWorldHostId === communityUser.id
+                ? getOnlineCoopWorldSnapshot()
+                : null;
             onlineStatePublishPromise = communityClient.from("online_match_players")
                     .update({
                         is_alive: player.hp > 0 && !onlineEliminationHandled,
@@ -2753,7 +3167,8 @@
                             hp: Math.max(0, player.hp),
                             max_hp: player.maxHp,
                             projectiles,
-                            updated_at: now
+                            updated_at: now,
+                            ...(coopWorld ? { coop_world: coopWorld } : {})
                         }
                     })
                     .eq("match_id", onlineMatchId)
@@ -2782,7 +3197,35 @@
             projectiles = [];
             showBuildModal = false;
             document.getElementById("online-match-status").textContent =
-                "Easy mode complete. Waiting for the other players before team combat.";
+                onlineMode === "ffa"
+                    ? "Easy mode complete. Waiting for the other players before the free-for-all."
+                    : "Easy mode complete. Waiting for the other players before team combat.";
+            await publishOnlineGameState(true);
+        }
+
+        async function completeOnlineCoopChallenge() {
+            if (onlineMode !== "co-op" || onlineLocalStage !== "combat" ||
+                !onlineMatchId || !communityUser || !communityClient) return;
+            onlineLocalStage = "completed";
+            gameState = "VICTORY";
+            const { error } = await communityClient.from("online_match_players")
+                .update({
+                    is_alive: true,
+                    stage: "completed",
+                    game_state: {
+                        x: player.x,
+                        y: player.y,
+                        hp: Math.max(0, player.hp),
+                        max_hp: player.maxHp,
+                        projectiles: [],
+                        updated_at: Date.now()
+                    }
+                })
+                .eq("match_id", onlineMatchId)
+                .eq("user_id", communityUser.id);
+            if (error) throw error;
+            document.getElementById("online-match-status").textContent =
+                "Challenge complete. Waiting for the rest of the co-op team.";
             await publishOnlineGameState(true);
         }
 
@@ -2997,11 +3440,18 @@
         document.querySelectorAll("[data-online-mode]").forEach((button) => {
             button.addEventListener("click", () => {
                 onlineMode = button.dataset.onlineMode;
+                updateOnlineModeControls(true);
                 document.querySelectorAll("[data-online-mode]").forEach(option => {
                     option.setAttribute("aria-pressed",
                         String(option.dataset.onlineMode === onlineMode));
                 });
             });
+        });
+        document.getElementById("online-player-capacity").addEventListener("change", event => {
+            onlinePlayerCapacity = Number(event.currentTarget.value);
+        });
+        document.getElementById("online-coop-difficulty").addEventListener("change", event => {
+            onlineDifficulty = event.currentTarget.value;
         });
         document.getElementById("online-friendly-fire").addEventListener("change", event => {
             onlineFriendlyFire = event.currentTarget.checked;
@@ -3021,15 +3471,6 @@
                         : "Public matchmaking is open to players in the selected mode.";
             });
         });
-        document.querySelectorAll("[data-online-difficulty]").forEach((button) => {
-            button.addEventListener("click", () => {
-                onlineDifficulty = button.dataset.onlineDifficulty;
-                document.querySelectorAll("[data-online-difficulty]").forEach(option => {
-                    option.setAttribute("aria-pressed",
-                        String(option.dataset.onlineDifficulty === onlineDifficulty));
-                });
-            });
-        });
         document.getElementById("online-player-search").addEventListener("input", () => {
             loadOnlineSocial();
         });
@@ -3038,6 +3479,8 @@
         document.getElementById("online-cancel-match").addEventListener("click", cancelOnlineMatch);
         document.getElementById("online-ready-up").addEventListener("click", () => setOnlinePlayerReady(true));
         document.getElementById("online-unready").addEventListener("click", () => setOnlinePlayerReady(false));
+        document.getElementById("online-start-match").addEventListener("click", startOnlineMatch);
+        updateOnlineModeControls();
         document.querySelectorAll("[data-leaderboard-difficulty]").forEach((button) => {
             button.addEventListener("click", () => {
                 selectLeaderboardDifficulty(button.dataset.leaderboardDifficulty);
@@ -3711,8 +4154,11 @@
                     }
                 });
 
-                const angle = Math.atan2(player.y - this.y, player.x - this.x);
-                const distanceToPlayer = Math.hypot(player.x - this.x, player.y - this.y);
+                const target = onlineMatchId && onlineMode === "co-op"
+                    ? getOnlineCoopTarget(this.x, this.y)
+                    : { user_id: null, x: player.x, y: player.y };
+                const angle = Math.atan2(target.y - this.y, target.x - this.x);
+                const distanceToPlayer = Math.hypot(target.x - this.x, target.y - this.y);
                 const rangedStats = this.model === 'archer'
                     ? { range: 300, cooldown: 1100, damage: 8, speed: 5, color: "#34d399" }
                     : this.model === 'crossbow'
@@ -3735,6 +4181,9 @@
                     if (Date.now() - this.lastShot >= rangedStats.cooldown) {
                         this.lastShot = Date.now();
                         projectiles.push({
+                            id: crypto.randomUUID(),
+                            created_at: Date.now(),
+                            target_user_id: target.user_id,
                             x: this.x, y: this.y,
                             vx: Math.cos(angle) * rangedStats.speed,
                             vy: Math.sin(angle) * rangedStats.speed,
@@ -4342,11 +4791,12 @@
                 publishOnlineGameState().catch(error => {
                     console.error("Could not publish multiplayer game state.", error);
                 });
-                if (onlineMatchPhase === "combat" && onlineLocalStage === "combat") {
+                if (onlineMatchPhase === "combat" && onlineLocalStage === "combat" &&
+                    onlineMode !== "co-op") {
                     updateOnlineCombat(deltaTime, frameScale);
                     return;
                 }
-                if (onlineLocalStage !== "easy") {
+                if (onlineMode !== "co-op" && onlineLocalStage !== "easy") {
                     publishOnlineGameState().catch(error => {
                         console.error("Could not publish multiplayer game state.", error);
                     });
@@ -4354,76 +4804,86 @@
                 }
             }
 
-            defenses.forEach(def => def.update(frameScale));
-            defenses = defenses.filter(def => !def.broken);
+            const onlineCoopFollower = onlineMatchId && onlineMode === "co-op" &&
+                onlineCoopWorldHostId !== communityUser?.id;
+            if (!onlineCoopFollower) {
+                defenses.forEach(def => def.update(frameScale));
+                defenses = defenses.filter(def => !def.broken);
 
-            if (gameMode === 'arcade') {
-                arcadeElapsedMs += deltaTime;
-                arcadeSpawnTimerMs += deltaTime;
-                while (arcadeNextKingMs <= arcadeElapsedMs || arcadeNextChampionMs <= arcadeElapsedMs) {
-                    if (arcadeNextKingMs <= arcadeNextChampionMs) {
-                        spawnKing();
-                        arcadeNextKingMs += arcadeKingIntervalMs;
+                if (gameMode === 'arcade') {
+                    arcadeElapsedMs += deltaTime;
+                    arcadeSpawnTimerMs += deltaTime;
+                    while (arcadeNextKingMs <= arcadeElapsedMs ||
+                        arcadeNextChampionMs <= arcadeElapsedMs) {
+                        if (arcadeNextKingMs <= arcadeNextChampionMs) {
+                            spawnKing();
+                            arcadeNextKingMs += arcadeKingIntervalMs;
+                        } else {
+                            if (arcadeNextChampionMs % arcadeKingIntervalMs !== 0) spawnChampion();
+                            arcadeNextChampionMs += arcadeChampionIntervalMs;
+                        }
+                    }
+                    if (arcadeElapsedMs >= arcadeNextMilestoneRewardMs) {
+                        while (arcadeNextMilestoneRewardMs <= arcadeElapsedMs) {
+                            arcadeNextMilestoneRewardMs += arcadeChampionIntervalMs;
+                        }
+                        openMilestoneReward('PLAYING');
+                    }
+
+                    const minutesSinceFirstKing = arcadeElapsedMs >= arcadeKingIntervalMs
+                        ? Math.floor((arcadeElapsedMs - arcadeKingIntervalMs) / 60000)
+                        : 0;
+                    const spawnCount = Math.ceil(
+                        (5 + minutesSinceFirstKing) * getEnemyCountMultiplier());
+                    const spawnIntervalMs = 5000;
+
+                    if (arcadeSpawnTimerMs >= spawnIntervalMs) {
+                        arcadeSpawnTimerMs %= spawnIntervalMs;
+                        for (let i = 0; i < spawnCount; i++) spawnEnemyForRound();
+                    }
+                } else if (waveActive && enemiesRemainingInWave > 0) {
+                    waveTimer += frameScale;
+                    if (waveTimer > Math.max(1, 50 - (currentRound * 3))) {
+                        spawnEnemyForRound();
+                        enemiesRemainingInWave--;
+                        waveTimer = 0;
+                    }
+                } else if (waveActive && enemies.length === 0 && enemiesRemainingInWave <= 0) {
+                    waveActive = false;
+                    player.hp = Math.min(player.maxHp, player.hp + 35);
+
+                    let bankMultiplier = 1.05 + getSkillEffect('bankInterest');
+                    let activeBanks = defenses.filter(d => d.type === 'bank' && !d.broken).length;
+                    let totalMult = Math.pow(bankMultiplier, activeBanks);
+
+                    let bonusGold = Math.floor(40 * totalMult);
+                    player.gold += bonusGold + 30;
+
+                    if (currentRound >= maxRounds) {
+                        runTimerActive = false;
+                        if (onlineMatchId) {
+                            const completeStage = onlineMode === "co-op"
+                                ? completeOnlineCoopChallenge()
+                                : completeOnlineEasyStage();
+                            completeStage.catch(error => {
+                                console.error("Could not complete the multiplayer stage.", error);
+                                document.getElementById("online-match-status").textContent =
+                                    `Could not complete the multiplayer stage: ${error.message || "Database request failed."}`;
+                            });
+                        } else {
+                            gameState = 'VICTORY';
+                        }
+                        if (!onlineMatchId && isLeaderboardRun()) {
+                            submitLeaderboardTime(Math.floor(runElapsedMs), difficulty)
+                                .catch(showLeaderboardError);
+                        }
                     } else {
-                        if (arcadeNextChampionMs % arcadeKingIntervalMs !== 0) spawnChampion();
-                        arcadeNextChampionMs += arcadeChampionIntervalMs;
-                    }
-                }
-                if (arcadeElapsedMs >= arcadeNextMilestoneRewardMs) {
-                    while (arcadeNextMilestoneRewardMs <= arcadeElapsedMs) {
-                        arcadeNextMilestoneRewardMs += arcadeChampionIntervalMs;
-                    }
-                    openMilestoneReward('PLAYING');
-                }
-
-                const minutesSinceFirstKing = arcadeElapsedMs >= arcadeKingIntervalMs
-                    ? Math.floor((arcadeElapsedMs - arcadeKingIntervalMs) / 60000)
-                    : 0;
-                const spawnCount = Math.ceil((5 + minutesSinceFirstKing) * getEnemyCountMultiplier());
-                const spawnIntervalMs = 5000;
-
-                if (arcadeSpawnTimerMs >= spawnIntervalMs) {
-                    arcadeSpawnTimerMs %= spawnIntervalMs;
-                    for (let i = 0; i < spawnCount; i++) spawnEnemyForRound();
-                }
-            } else if (waveActive && enemiesRemainingInWave > 0) {
-                waveTimer += frameScale;
-                if (waveTimer > Math.max(1, 50 - (currentRound * 3))) {
-                    spawnEnemyForRound();
-                    enemiesRemainingInWave--;
-                    waveTimer = 0;
-                }
-            } else if (waveActive && enemies.length === 0 && enemiesRemainingInWave <= 0) {
-                waveActive = false;
-                player.hp = Math.min(player.maxHp, player.hp + 35);
-
-                let bankMultiplier = 1.05 + getSkillEffect('bankInterest');
-                let activeBanks = defenses.filter(d => d.type === 'bank' && !d.broken).length;
-                let totalMult = Math.pow(bankMultiplier, activeBanks);
-
-                let bonusGold = Math.floor(40 * totalMult);
-                player.gold += bonusGold + 30;
-
-                if (currentRound >= maxRounds) {
-                    runTimerActive = false;
-                    if (onlineMatchId) {
-                        completeOnlineEasyStage().catch(error => {
-                            console.error("Could not complete the Easy stage.", error);
-                            document.getElementById("online-match-status").textContent =
-                                `Could not advance to PvP: ${error.message || "Database request failed."}`;
-                        });
-                    } else {
-                        gameState = 'VICTORY';
-                    }
-                    if (!onlineMatchId && isLeaderboardRun()) {
-                        submitLeaderboardTime(Math.floor(runElapsedMs), difficulty).catch(showLeaderboardError);
-                    }
-                } else {
-                    currentRound++;
-                    intermissionFrames = 30 * 60;
-                    gameState = 'INTERMISSION';
-                    if (currentRound === 11 && !milestoneRewardClaimed) {
-                        openMilestoneReward('INTERMISSION');
+                        currentRound++;
+                        intermissionFrames = 30 * 60;
+                        gameState = 'INTERMISSION';
+                        if (currentRound === 11 && !milestoneRewardClaimed) {
+                            openMilestoneReward('INTERMISSION');
+                        }
                     }
                 }
             }
@@ -4491,6 +4951,8 @@
 
                 const speedMultiplier = 1 + getSkillEffect('spellSpeed');
                 const projectile = {
+                    onlineId: crypto.randomUUID(),
+                    createdAt: Date.now(),
                     x: player.x, y: player.y,
                     vx: Math.cos(angle) * spell.speed * speedMultiplier,
                     vy: Math.sin(angle) * spell.speed * speedMultiplier,
@@ -4503,19 +4965,108 @@
                     hitEnemies: []
                 };
                 projectiles.push(projectile);
+                if (onlineMatchId && onlineMode === "co-op") {
+                    onlineShotEvents.push({
+                        id: projectile.onlineId,
+                        x: projectile.x,
+                        y: projectile.y,
+                        vx: projectile.vx,
+                        vy: projectile.vy,
+                        radius: projectile.radius,
+                        color: projectile.color,
+                        damage: projectile.damage,
+                        created_at: projectile.createdAt
+                    });
+                }
                 if (sidekickUnlocked) {
                     const sidekickPosition = getSidekickPosition();
-                    projectiles.push({
+                    const sidekickProjectile = {
                         ...projectile,
                         x: sidekickPosition.x,
                         y: sidekickPosition.y,
+                        onlineId: crypto.randomUUID(),
+                        createdAt: Date.now(),
                         hitEnemies: []
-                    });
+                    };
+                    projectiles.push(sidekickProjectile);
+                    if (onlineMatchId && onlineMode === "co-op") {
+                        onlineShotEvents.push({
+                            id: sidekickProjectile.onlineId,
+                            x: sidekickProjectile.x,
+                            y: sidekickProjectile.y,
+                            vx: sidekickProjectile.vx,
+                            vy: sidekickProjectile.vy,
+                            radius: sidekickProjectile.radius,
+                            color: sidekickProjectile.color,
+                            damage: sidekickProjectile.damage,
+                            created_at: sidekickProjectile.createdAt
+                        });
+                    }
                 }
             }
 
             for (let i = projectiles.length - 1; i >= 0; i--) {
                 let p = projectiles[i];
+                if (onlineCoopFollower) {
+                    if (p.isEnemyProjectile) continue;
+                    if (p.isInfernoFlame) {
+                        p.remainingMs -= deltaTime;
+                        if (p.remainingMs <= 0) projectiles.splice(i, 1);
+                        continue;
+                    }
+                    p.x += p.vx * frameScale;
+                    p.y += p.vy * frameScale;
+                    if (p.x < 0 || p.x > canvas.width ||
+                        p.y < 0 || p.y > canvas.height) projectiles.splice(i, 1);
+                    continue;
+                }
+                if (onlineMatchId && onlineMode === "co-op" && p.isEnemyProjectile) {
+                    if (p.isEnemyGasCanister || p.isCatapultBoulder) {
+                        const angle = Math.atan2(p.targetY - p.y, p.targetX - p.x);
+                        p.x += Math.cos(angle) * p.speed * frameScale;
+                        p.y += Math.sin(angle) * p.speed * frameScale;
+                        const impactDistance = Math.hypot(p.targetX - p.x, p.targetY - p.y);
+                        if (impactDistance < p.speed + 1) {
+                            const target = onlineRemotePlayers.find(remote =>
+                                remote.user_id === p.target_user_id)?.game_state;
+                            const targetX = p.target_user_id === communityUser?.id
+                                ? player.x : Number(target?.x);
+                            const targetY = p.target_user_id === communityUser?.id
+                                ? player.y : Number(target?.y);
+                            const splashRadius = Number(p.splashRadius) || 0;
+                            if (!p.isCatapultBoulder ||
+                                Math.hypot(targetX - p.targetX, targetY - p.targetY) <=
+                                    splashRadius + player.radius) {
+                                recordOnlineCoopDamage(
+                                    p.target_user_id,
+                                    Number(p.damage) || Number(p.gasDamagePerSecond) * 4,
+                                    p.id
+                                );
+                            }
+                            createExplosion(p.targetX, p.targetY, p.color || "#ef4444");
+                            projectiles.splice(i, 1);
+                        }
+                    } else {
+                        p.x += p.vx * frameScale;
+                        p.y += p.vy * frameScale;
+                        const target = onlineRemotePlayers.find(remote =>
+                            remote.user_id === p.target_user_id)?.game_state;
+                        const targetX = p.target_user_id === communityUser?.id
+                            ? player.x : Number(target?.x);
+                        const targetY = p.target_user_id === communityUser?.id
+                            ? player.y : Number(target?.y);
+                        if (Math.hypot(targetX - p.x, targetY - p.y) <=
+                            player.radius + (Number(p.radius) || 0)) {
+                            recordOnlineCoopDamage(p.target_user_id, p.damage, p.id);
+                            projectiles.splice(i, 1);
+                        } else if (p.x < 0 || p.x > canvas.width ||
+                            p.y < 0 || p.y > canvas.height ||
+                            Date.now() - Number(p.created_at) > 10000) {
+                            projectiles.splice(i, 1);
+                        }
+                    }
+                    continue;
+                }
                 if (p.isInfernoFlame) {
                     const elapsedMs = Math.min(deltaTime, p.remainingMs);
                     p.remainingMs -= deltaTime;
@@ -4673,26 +5224,36 @@
                 }
             }
 
-            for (let i = enemies.length - 1; i >= 0; i--) {
-                let e = enemies[i];
-                if (e.burnRemainingMs > 0) {
-                    const burnElapsedMs = Math.min(deltaTime, e.burnRemainingMs);
-                    e.burnRemainingMs -= deltaTime;
-                    e.hp -= e.burnDamagePerSecond * burnElapsedMs / 1000;
-                    checkEnemyDeath(e);
-                    if (e.hp <= 0) continue;
-                }
-                e.update(deltaTime, frameScale);
-
-                if (Math.hypot(player.x - e.x, player.y - e.y) < player.radius + e.radius) {
-                    e.contactDamageTimerMs = Math.max(0, e.contactDamageTimerMs - deltaTime);
-                    if (e.contactDamageTimerMs === 0) {
-                        applyPlayerDamage(e.contactDamage);
-                        createExplosion(player.x, player.y, "#ef4444");
-                        e.contactDamageTimerMs = enemyContactDamageIntervalMs;
+            if (!onlineCoopFollower) {
+                for (let i = enemies.length - 1; i >= 0; i--) {
+                    let e = enemies[i];
+                    if (e.burnRemainingMs > 0) {
+                        const burnElapsedMs = Math.min(deltaTime, e.burnRemainingMs);
+                        e.burnRemainingMs -= deltaTime;
+                        e.hp -= e.burnDamagePerSecond * burnElapsedMs / 1000;
+                        checkEnemyDeath(e);
+                        if (e.hp <= 0) continue;
                     }
-                } else {
-                    e.contactDamageTimerMs = 0;
+                    e.update(deltaTime, frameScale);
+
+                    const target = onlineMatchId && onlineMode === "co-op"
+                        ? getOnlineCoopTarget(e.x, e.y)
+                        : { user_id: communityUser?.id, x: player.x, y: player.y };
+                    if (Math.hypot(target.x - e.x, target.y - e.y) < player.radius + e.radius) {
+                        e.contactDamageTimerMs = Math.max(0, e.contactDamageTimerMs - deltaTime);
+                        if (e.contactDamageTimerMs === 0) {
+                            if (onlineMatchId && onlineMode === "co-op") {
+                                recordOnlineCoopDamage(
+                                    target.user_id, e.contactDamage, crypto.randomUUID());
+                            } else {
+                                applyPlayerDamage(e.contactDamage);
+                            }
+                            createExplosion(target.x, target.y, "#ef4444");
+                            e.contactDamageTimerMs = enemyContactDamageIntervalMs;
+                        }
+                    } else {
+                        e.contactDamageTimerMs = 0;
+                    }
                 }
             }
 
@@ -4921,7 +5482,12 @@
                 ctx.fillStyle = "#f8fafc";
                 ctx.font = "bold 18px Georgia, serif";
                 ctx.textAlign = "center";
-                ctx.fillText("Easy stage complete — waiting for all players to finish", canvas.width / 2, 50);
+                ctx.fillText(
+                    onlineMode === "ffa"
+                        ? "Easy stage complete — waiting for players before free for all"
+                        : "Easy stage complete — waiting for all players to finish",
+                    canvas.width / 2, 50
+                );
                 ctx.textAlign = "left";
             } else if (onlineMatchId && onlineMatchPhase === "combat") {
                 ctx.fillStyle = "rgba(9, 9, 14, 0.8)";
@@ -4929,10 +5495,12 @@
                 ctx.fillStyle = "#f8fafc";
                 ctx.font = "bold 17px Georgia, serif";
                 ctx.textAlign = "center";
-                ctx.fillText(
-                    `${onlineMode.toUpperCase()} · TEAM ${onlineMatchTeam} · FF ${onlineFriendlyFire ? "ON" : "OFF"}`,
-                    canvas.width / 2, 48
-                );
+                const onlineHudLabel = onlineMode === "co-op"
+                    ? `CO-OP · ${onlineDifficulty.toUpperCase()} · FF ${onlineFriendlyFire ? "ON" : "OFF"}`
+                    : onlineMode === "ffa"
+                        ? `FREE FOR ALL · PLAYER ${onlineMatchTeam}`
+                        : `${onlineMode.toUpperCase()} · TEAM ${onlineMatchTeam} · FF ${onlineFriendlyFire ? "ON" : "OFF"}`;
+                ctx.fillText(onlineHudLabel, canvas.width / 2, 48);
                 ctx.textAlign = "left";
             }
             if (selectedDefenseType) {
@@ -5070,11 +5638,12 @@
         };
 
         const GAME_VERSION = "1.01";
+        const GAME_BUILD = "ffa-coop";
         let shareStatus = "";
         let shareStatusExpiresAt = 0;
 
         async function shareSpellbound() {
-            const url = `https://f102-cell.github.io/Spellbound/game.html?v=${GAME_VERSION}`;
+            const url = `https://f102-cell.github.io/Spellbound/game.html?v=${GAME_VERSION}&build=${GAME_BUILD}`;
             const shareData = {
                 title: "Spellbound: King's Realm",
                 text: "Play Spellbound: King's Realm with me!",

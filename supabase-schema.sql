@@ -83,6 +83,12 @@ alter table public.online_match_players
     add column if not exists game_state jsonb not null default '{}'::jsonb
         check (jsonb_typeof(game_state) = 'object');
 
+alter table public.online_match_players
+    drop constraint if exists online_match_players_stage_check;
+alter table public.online_match_players
+    add constraint online_match_players_stage_check
+        check (stage in ('easy', 'combat', 'eliminated', 'abandoned', 'completed'));
+
 create or replace function public.require_all_online_players_ready()
 returns trigger
 language plpgsql
@@ -98,6 +104,7 @@ begin
             raise exception 'Only a waiting match can be started.'
                 using errcode = '23514';
         end if;
+        new.phase := case when new.mode = 'co-op' then 'combat' else 'easy' end;
 
         perform 1
         from public.online_match_players
@@ -114,7 +121,7 @@ begin
             or (new.mode not in ('1v1', '2v2', '3v3', '4v4') and player_count < 2)
             or ready_count <> player_count
         ) then
-            raise exception 'The lobby must be full and every player must be ready before the match can start.'
+            raise exception 'The lobby must meet its player-count rules and every player must be ready before the match can start.'
                 using errcode = '23514';
         end if;
     end if;
@@ -143,10 +150,12 @@ begin
         )
         update public.online_match_players as participant
         set team = case
+            when new.mode = 'co-op' then 1
+            when new.mode = 'ffa' then shuffled_players.player_number::integer
             when mod(shuffled_players.player_number - 1, 2) = 0 then 1
             else 2
         end,
-            stage = 'easy',
+            stage = case when new.mode = 'co-op' then 'combat' else 'easy' end,
             is_alive = true
         from shuffled_players
         where participant.match_id = new.id
@@ -163,12 +172,18 @@ create trigger assign_online_match_teams
 
 create table if not exists public.online_mode_leaderboard (
     user_id uuid not null references public.profiles (id) on delete cascade,
-    mode text not null check (mode in ('1v1', '2v2', '3v3', '4v4')),
+    mode text not null check (mode in ('1v1', '2v2', '3v3', '4v4', 'ffa', 'co-op')),
     username text not null check (char_length(btrim(username)) between 1 and 30),
     wins bigint not null default 0 check (wins >= 0),
     updated_at timestamptz not null default now(),
     primary key (user_id, mode)
 );
+
+alter table public.online_mode_leaderboard
+    drop constraint if exists online_mode_leaderboard_mode_check;
+alter table public.online_mode_leaderboard
+    add constraint online_mode_leaderboard_mode_check
+        check (mode in ('1v1', '2v2', '3v3', '4v4', 'ffa', 'co-op'));
 
 create table if not exists public.online_player_penalties (
     user_id uuid primary key references public.profiles (id) on delete cascade,
@@ -236,7 +251,7 @@ begin
         where participant.match_id = combat_match_id
             and participant.user_id = (select auth.uid())
     ) then
-        raise exception 'Only a player in this match can start team combat.'
+        raise exception 'Only a player in this match can start multiplayer combat.'
             using errcode = '23514';
     end if;
 
@@ -259,7 +274,7 @@ begin
         select 1 from public.online_match_players as participant
         where participant.match_id = combat_match_id and participant.stage = 'easy'
     ) then
-        raise exception 'All players must finish Easy mode before combat can begin.'
+        raise exception 'All players must finish Easy mode before multiplayer combat can begin.'
             using errcode = '23514';
     end if;
     update public.online_matches
@@ -293,6 +308,47 @@ begin
         raise exception 'Only a living player in combat can report a match win.'
             using errcode = '23514';
     end if;
+    if match_mode = 'co-op' then
+        if not exists (
+            select 1 from public.online_match_players as participant
+            where participant.match_id = won_match_id
+                and participant.stage = 'completed'
+                and participant.is_alive
+        ) or exists (
+            select 1 from public.online_match_players as participant
+            where participant.match_id = won_match_id
+                and participant.is_alive
+                and participant.stage <> 'completed'
+        ) then
+            raise exception 'All surviving co-op players must complete the challenge.'
+                using errcode = '23514';
+        end if;
+
+        update public.online_matches
+        set status = 'finished',
+            winner_team = 1,
+            updated_at = now()
+        where id = won_match_id and status = 'in_progress';
+        if not found then
+            return;
+        end if;
+
+        insert into public.online_mode_leaderboard as leaderboard
+            (user_id, mode, username, wins)
+        select participant.user_id, match_mode,
+            left(coalesce(profile.username, 'Player'), 30), 1
+        from public.online_match_players as participant
+        join public.profiles as profile on profile.id = participant.user_id
+        where participant.match_id = won_match_id
+            and participant.stage = 'completed'
+            and participant.is_alive
+        on conflict (user_id, mode) do update
+            set wins = leaderboard.wins + 1,
+                username = excluded.username,
+                updated_at = now();
+        return;
+    end if;
+
     if exists (
         select 1 from public.online_match_players as opponent
         where opponent.match_id = won_match_id
@@ -325,6 +381,49 @@ begin
         set wins = leaderboard.wins + 1,
             username = excluded.username,
             updated_at = now();
+end;
+$$;
+
+create or replace function public.finish_online_coop_match_if_lost(lost_match_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+    if not exists (
+        select 1 from public.online_match_players as participant
+        where participant.match_id = lost_match_id
+            and participant.user_id = (select auth.uid())
+    ) then
+        raise exception 'Only a player in this co-op match can finish it.'
+            using errcode = '23514';
+    end if;
+
+    perform 1
+    from public.online_matches as online_match
+    where online_match.id = lost_match_id
+        and online_match.mode = 'co-op'
+        and online_match.status = 'in_progress'
+    for update;
+    if not found then
+        return;
+    end if;
+
+    if exists (
+        select 1 from public.online_match_players as participant
+        where participant.match_id = lost_match_id
+            and participant.is_alive
+    ) then
+        return;
+    end if;
+
+    update public.online_matches
+    set status = 'finished',
+        winner_team = null,
+        updated_at = now()
+    where id = lost_match_id
+        and status = 'in_progress';
 end;
 $$;
 
@@ -782,10 +881,12 @@ revoke all on function public.get_online_penalty() from public, anon;
 revoke all on function public.abandon_online_match(uuid) from public, anon;
 revoke all on function public.start_online_combat(uuid) from public, anon;
 revoke all on function public.record_online_match_win(uuid) from public, anon;
+revoke all on function public.finish_online_coop_match_if_lost(uuid) from public, anon;
 grant execute on function public.get_online_penalty() to authenticated;
 grant execute on function public.abandon_online_match(uuid) to authenticated;
 grant execute on function public.start_online_combat(uuid) to authenticated;
 grant execute on function public.record_online_match_win(uuid) to authenticated;
+grant execute on function public.finish_online_coop_match_if_lost(uuid) to authenticated;
 
 do $$
 begin
