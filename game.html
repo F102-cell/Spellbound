@@ -43,6 +43,18 @@
             color: #e2e8f0;
             font-family: Georgia, serif;
         }
+        #online-penalty-countdown {
+            position: absolute;
+            right: 22px;
+            bottom: 22px;
+            z-index: 5;
+            padding: 8px 12px;
+            border: 1px solid #ef4444;
+            background: rgba(9, 9, 14, 0.96);
+            color: #fca5a5;
+            font: bold 14px Georgia, serif;
+            pointer-events: none;
+        }
         #community-panel[hidden],
         #community-auth-view[hidden],
         #community-sidebar[hidden],
@@ -256,6 +268,21 @@
             color: #d4af37;
             font-variant-numeric: tabular-nums;
         }
+        .online-leaderboard-mode {
+            border-top: 1px solid rgba(212, 175, 55, 0.35);
+            padding-top: 5px;
+        }
+        .online-leaderboard-mode h4 {
+            margin: 0 0 5px;
+            color: #d4af37;
+        }
+        #leaderboard-section {
+            overflow-y: auto;
+        }
+        .online-leaderboard-mode .community-entry-list {
+            max-height: 120px;
+            flex: none;
+        }
         .leaderboard-difficulties button {
             border: 1px solid #d4af37;
             background: #5c4033;
@@ -306,6 +333,9 @@
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 6px;
         }
+        #online-match-mode-selector {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
         .online-mode,
         .online-difficulty {
             border: 1px solid #d4af37;
@@ -324,6 +354,16 @@
             display: flex;
             flex-wrap: wrap;
             gap: 5px;
+        }
+        .online-friendly-fire {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            color: #e2e8f0;
+            font-size: 13px;
+        }
+        #online-friendly-fire {
+            accent-color: #b91c1c;
         }
         .online-player-row {
             display: grid;
@@ -498,6 +538,29 @@
                         <p id="leaderboard-status" role="status" aria-live="polite">Loading scores...</p>
                         <div id="leaderboard-list" class="community-entry-list" aria-live="polite"></div>
                     </div>
+                    <div class="community-section-header">
+                        <h3>Multiplayer Wins</h3>
+                    </div>
+                    <section class="online-leaderboard-mode" aria-label="1v1 total wins">
+                        <h4>1v1 Total Wins</h4>
+                        <p id="online-leaderboard-status-1v1" role="status" aria-live="polite">Loading wins...</p>
+                        <div id="online-leaderboard-list-1v1" class="community-entry-list" aria-live="polite"></div>
+                    </section>
+                    <section class="online-leaderboard-mode" aria-label="2v2 total wins">
+                        <h4>2v2 Total Wins</h4>
+                        <p id="online-leaderboard-status-2v2" role="status" aria-live="polite">Loading wins...</p>
+                        <div id="online-leaderboard-list-2v2" class="community-entry-list" aria-live="polite"></div>
+                    </section>
+                    <section class="online-leaderboard-mode" aria-label="3v3 total wins">
+                        <h4>3v3 Total Wins</h4>
+                        <p id="online-leaderboard-status-3v3" role="status" aria-live="polite">Loading wins...</p>
+                        <div id="online-leaderboard-list-3v3" class="community-entry-list" aria-live="polite"></div>
+                    </section>
+                    <section class="online-leaderboard-mode" aria-label="4v4 total wins">
+                        <h4>4v4 Total Wins</h4>
+                        <p id="online-leaderboard-status-4v4" role="status" aria-live="polite">Loading wins...</p>
+                        <div id="online-leaderboard-list-4v4" class="community-entry-list" aria-live="polite"></div>
+                    </section>
                 </section>
                 <section id="community-posts-section" class="community-section" aria-label="Community posts">
                     <div class="community-section-header">
@@ -561,27 +624,21 @@
                                     aria-pressed="false">Private Party</button>
                             </div>
                             <strong>Match Mode</strong>
-                            <div class="online-mode-grid">
-                                <button class="online-mode" type="button" data-online-mode="duel"
+                            <div class="online-mode-grid" id="online-match-mode-selector">
+                                <button class="online-mode" type="button" data-online-mode="1v1"
                                     aria-pressed="true">1 vs 1</button>
-                                <button class="online-mode" type="button" data-online-mode="co-op"
-                                    aria-pressed="false">Team vs Difficulty (4 max)</button>
-                                <button class="online-mode" type="button" data-online-mode="ffa"
-                                    aria-pressed="false">Free-for-All (vs Other Players)</button>
+                                <button class="online-mode" type="button" data-online-mode="2v2"
+                                    aria-pressed="false">2 vs 2</button>
+                                <button class="online-mode" type="button" data-online-mode="3v3"
+                                    aria-pressed="false">3 vs 3</button>
+                                <button class="online-mode" type="button" data-online-mode="4v4"
+                                    aria-pressed="false">4 vs 4</button>
                             </div>
-                            <strong>Difficulty</strong>
-                            <div class="online-difficulties">
-                                <button class="online-difficulty" type="button" data-online-difficulty="easy"
-                                    aria-pressed="false">Easy</button>
-                                <button class="online-difficulty" type="button" data-online-difficulty="normal"
-                                    aria-pressed="true">Normal</button>
-                                <button class="online-difficulty" type="button" data-online-difficulty="hard"
-                                    aria-pressed="false">Hard</button>
-                                <button class="online-difficulty" type="button" data-online-difficulty="extreme"
-                                    aria-pressed="false">Extreme</button>
-                                <button class="online-difficulty" type="button" data-online-difficulty="impossible"
-                                    aria-pressed="false">Impossible</button>
-                            </div>
+                            <label class="online-friendly-fire">
+                                <input id="online-friendly-fire" type="checkbox">
+                                Enable friendly fire
+                            </label>
+                            <small>Every multiplayer match starts with an Easy-mode survival round.</small>
                             <button id="online-find-match" type="button">Find Match</button>
                             <button id="online-create-party" type="button" hidden>Create Private Party Match</button>
                             <button id="online-cancel-match" type="button" hidden>Cancel Matchmaking</button>
@@ -605,6 +662,7 @@
                 </section>
             </div>
         </div>
+        <div id="online-penalty-countdown" role="status" aria-live="polite" hidden></div>
     </div>
 
     <script>
@@ -817,13 +875,36 @@
         let communityPresenceChannel = null;
         let communityUser = null;
         let onlinePlayerIds = new Set();
-        let onlineMode = "duel";
-        let onlineDifficulty = "normal";
+        let onlineMode = "1v1";
+        let onlineDifficulty = "easy";
         let onlineVisibility = "public";
+        let onlineFriendlyFire = false;
+        let onlineMatchPhase = "easy";
+        let onlineGameSyncTimer = null;
+        let onlineGameSyncInProgress = false;
+        let onlineStatePublishInProgress = false;
+        let onlineStatePublishPromise = null;
+        let onlineLastStatePublishAt = 0;
+        let onlinePenaltyUntil = 0;
+        let lastOnlinePenaltyText = "";
+        let onlineEliminationHandled = false;
+        let onlineWinRecorded = false;
+        let onlineLocalStage = "easy";
+        let onlineMatchTeam = null;
+        let onlineCombatSpawned = false;
+        let onlineMatchWon = false;
+        let onlineOriginalDifficulty = "normal";
+        let onlineOriginalGameMode = "Rounds";
+        let onlineOriginalGameSettingsSaved = false;
+        let onlineRemotePlayers = [];
+        let onlineProcessedProjectileIds = new Set();
+        let onlineRemoteProjectilePositions = new Map();
+        let onlineShotEvents = [];
         const onlineModeSettings = {
-            duel: { minPlayers: 2, maxPlayers: 2 },
-            "co-op": { minPlayers: 2, maxPlayers: 4 },
-            ffa: { minPlayers: 2, maxPlayers: 8 }
+            "1v1": { maxPlayers: 2 },
+            "2v2": { maxPlayers: 4 },
+            "3v3": { maxPlayers: 6 },
+            "4v4": { maxPlayers: 8 }
         };
         let onlineMatchId = null;
         let onlineMatchHostId = null;
@@ -1095,6 +1176,54 @@
             setLeaderboardStatus(`Leaderboard error: ${error.message || "Unable to load scores."}`);
         }
 
+        function showOnlineLeaderboardError(error, mode) {
+            console.error("Multiplayer leaderboard request failed.", error);
+            document.getElementById(`online-leaderboard-status-${mode}`).textContent =
+                `Leaderboard error: ${error.message || "Unable to load multiplayer wins."}`;
+        }
+
+        async function loadOnlineLeaderboard(mode) {
+            const client = await getCommunityClient();
+            const { data, error } = await client
+                .from("online_mode_leaderboard")
+                .select("username, wins")
+                .eq("mode", mode)
+                .order("wins", { ascending: false })
+                .order("updated_at", { ascending: true })
+                .limit(10);
+            if (error) throw error;
+
+            const list = document.getElementById(`online-leaderboard-list-${mode}`);
+            list.replaceChildren();
+            if (!data?.length) {
+                const emptyMessage = document.createElement("p");
+                emptyMessage.textContent = "No multiplayer wins recorded yet.";
+                list.appendChild(emptyMessage);
+            } else {
+                data.forEach((entry, index) => {
+                    const row = document.createElement("article");
+                    row.className = "community-entry leaderboard-entry";
+                    const rank = document.createElement("strong");
+                    rank.textContent = `${index + 1}.`;
+                    const username = document.createElement("span");
+                    username.textContent = entry.username;
+                    const wins = document.createElement("strong");
+                    wins.className = "leaderboard-time";
+                    wins.textContent = `${Number(entry.wins)} wins`;
+                    row.append(rank, username, wins);
+                    list.appendChild(row);
+                });
+            }
+            document.getElementById(`online-leaderboard-status-${mode}`).textContent =
+                `${mode} total wins · Top 10`;
+        }
+
+        function loadOnlineLeaderboards() {
+            return Promise.all(["1v1", "2v2", "3v3", "4v4"].map(mode =>
+                loadOnlineLeaderboard(mode).catch(error => showOnlineLeaderboardError(error, mode))
+            ));
+        }
+
         async function submitLeaderboardTime(completionTimeMs, runDifficulty) {
             if (communityInitializationPromise) {
                 await communityInitializationPromise;
@@ -1272,6 +1401,9 @@
                 resetKeybinds();
                 if (user) loadPlayerControls(user.id, keybindsRevision).catch(showCommunityError);
             }
+            if (user) {
+                refreshOnlinePenalty().catch(showCommunityError);
+            }
             document.getElementById("community-auth-view").hidden = Boolean(user);
             if (!user) {
                 document.getElementById("community-auth-view").reset();
@@ -1376,6 +1508,11 @@
                 .on("postgres_changes", {
                     event: "*",
                     schema: "public",
+                    table: "online_mode_leaderboard"
+                }, () => loadOnlineLeaderboards())
+                .on("postgres_changes", {
+                    event: "*",
+                    schema: "public",
                     table: "friend_requests"
                 }, () => loadOnlineSocial().catch(showCommunityError))
                 .on("postgres_changes", {
@@ -1397,7 +1534,24 @@
                     event: "*",
                     schema: "public",
                     table: "online_match_players"
-                }, () => refreshOnlineMatchStatus())
+                }, payload => {
+                    if (onlineGameStartedMatchId === onlineMatchId && onlineMatchId) {
+                        const update = payload.new;
+                        if (update?.match_id === onlineMatchId) {
+                            if (update.user_id !== communityUser?.id) {
+                                const remote = onlineRemotePlayers.find(player =>
+                                    player.user_id === update.user_id);
+                                if (remote) Object.assign(remote, update);
+                            }
+                            return;
+                        }
+                        syncOnlineGame().catch(error => {
+                            console.error("Could not sync multiplayer player state.", error);
+                        });
+                    } else {
+                        refreshOnlineMatchStatus();
+                    }
+                })
                 .subscribe((status) => {
                     if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
                         setCommunityStatus(`Live updates unavailable (${status}). Refresh the page to retry.`);
@@ -1839,10 +1993,66 @@
             }
         }
 
+        async function refreshOnlinePenalty() {
+            if (!communityUser || !communityClient) {
+                onlinePenaltyUntil = 0;
+                return 0;
+            }
+            const { data, error } = await communityClient.rpc("get_online_penalty");
+            if (error) throw error;
+            onlinePenaltyUntil = data ? Date.parse(data) : 0;
+            const storageKey = `spellbound-online-penalty:${communityUser.id}`;
+            if (onlinePenaltyUntil > Date.now()) {
+                localStorage.setItem(storageKey, String(onlinePenaltyUntil));
+            } else {
+                localStorage.removeItem(storageKey);
+            }
+            return onlinePenaltyUntil;
+        }
+
+        function getOnlinePenaltyMessage() {
+            const remainingSeconds = Math.max(0, Math.ceil((onlinePenaltyUntil - Date.now()) / 1000));
+            const minutes = Math.floor(remainingSeconds / 60);
+            const seconds = remainingSeconds % 60;
+            return `Multiplayer is locked for ${minutes}:${String(seconds).padStart(2, "0")} after leaving a match.`;
+        }
+
+        function updateOnlinePenaltyCountdown() {
+            const countdown = document.getElementById("online-penalty-countdown");
+            if (onlinePenaltyUntil <= Date.now()) {
+                countdown.hidden = true;
+                lastOnlinePenaltyText = "";
+                return;
+            }
+            const remainingSeconds = Math.ceil((onlinePenaltyUntil - Date.now()) / 1000);
+            const minutes = Math.floor(remainingSeconds / 60);
+            const seconds = remainingSeconds % 60;
+            const text = `Multiplayer wait: ${minutes}:${String(seconds).padStart(2, "0")}`;
+            countdown.hidden = false;
+            if (text !== lastOnlinePenaltyText) {
+                countdown.textContent = text;
+                lastOnlinePenaltyText = text;
+            }
+        }
+
+        async function multiplayerPenaltyActive() {
+            await refreshOnlinePenalty();
+            return onlinePenaltyUntil > Date.now();
+        }
+
         async function createOnlineParty() {
             if (!communityUser || !communityClient) {
                 document.getElementById("online-match-status").textContent =
                     "Sign in before creating a party.";
+                return;
+            }
+            try {
+                if (await multiplayerPenaltyActive()) {
+                    document.getElementById("online-match-status").textContent = getOnlinePenaltyMessage();
+                    return;
+                }
+            } catch (error) {
+                showCommunityError(error);
                 return;
             }
             if (onlineMatchId) {
@@ -1853,7 +2063,7 @@
             if (onlineMatchRequestInProgress) return;
 
             const selectedMode = onlineMode;
-            const selectedDifficulty = onlineDifficulty;
+            const selectedDifficulty = "easy";
             const settings = onlineModeSettings[selectedMode];
             onlineVisibility = "private";
             onlineMatchRequestInProgress = true;
@@ -1868,7 +2078,8 @@
                         difficulty: selectedDifficulty,
                         status: "waiting",
                         max_players: settings.maxPlayers,
-                        is_party: true
+                        is_party: true,
+                        friendly_fire: onlineFriendlyFire
                     })
                     .select("id")
                     .single();
@@ -1879,7 +2090,7 @@
                     .insert({
                         match_id: party.id,
                         user_id: communityUser.id,
-                        team: selectedMode === "co-op" ? 1 : null
+                        team: null
                     });
                 if (joinError) {
                     await communityClient.from("online_matches")
@@ -1893,6 +2104,9 @@
                 onlineMatchHostId = communityUser.id;
                 onlineMatchIsParty = true;
                 onlineGameStartedMatchId = null;
+                onlineMatchPhase = "easy";
+                onlineEliminationHandled = false;
+                onlineWinRecorded = false;
                 await startOnlineMatchRefresh();
             } catch (error) {
                 showCommunityError(error);
@@ -2005,6 +2219,15 @@
                     "Sign in before matchmaking.";
                 return;
             }
+            try {
+                if (await multiplayerPenaltyActive()) {
+                    document.getElementById("online-match-status").textContent = getOnlinePenaltyMessage();
+                    return;
+                }
+            } catch (error) {
+                showCommunityError(error);
+                return;
+            }
             if (onlineMatchId) {
                 document.getElementById("online-match-status").textContent =
                     "Leave your current lobby before finding another match.";
@@ -2012,7 +2235,7 @@
             }
             if (onlineMatchRequestInProgress) return;
             const selectedMode = onlineMode;
-            const selectedDifficulty = onlineDifficulty;
+            const selectedDifficulty = "easy";
             const settings = onlineModeSettings[selectedMode];
             onlineMatchRequestInProgress = true;
             setOnlineMatchSearchLocked(true);
@@ -2020,9 +2243,10 @@
             try {
                 const { data: matches, error: matchError } = await communityClient
                     .from("online_matches")
-                    .select("id, host_id, mode, difficulty, status, max_players")
+                    .select("id, host_id, mode, difficulty, status, max_players, friendly_fire")
                     .eq("mode", selectedMode)
                     .eq("difficulty", selectedDifficulty)
+                    .eq("friendly_fire", onlineFriendlyFire)
                     .eq("status", "waiting")
                     .eq("is_party", false)
                     .order("created_at", { ascending: true })
@@ -2061,7 +2285,8 @@
                             mode: selectedMode,
                             difficulty: selectedDifficulty,
                             status: "waiting",
-                            max_players: settings.maxPlayers
+                            max_players: settings.maxPlayers,
+                            friendly_fire: onlineFriendlyFire
                         })
                         .select("id")
                         .single();
@@ -2074,14 +2299,17 @@
                     .insert({
                         match_id: match.id,
                         user_id: communityUser.id,
-                        team: selectedMode === "co-op" ? 1 : null,
+                        team: null,
                         is_ready: false
                     });
                 if (joinError && joinError.code !== "23505") throw joinError;
                 onlineMatchId = match.id;
-                onlineMatchHostId = match.host_id;
+                onlineMatchHostId = match.host_id || communityUser.id;
                 onlineMatchIsParty = false;
                 onlineGameStartedMatchId = null;
+                onlineMatchPhase = "easy";
+                onlineEliminationHandled = false;
+                onlineWinRecorded = false;
                 await startOnlineMatchRefresh();
             } catch (error) {
                 showCommunityError(error);
@@ -2096,7 +2324,7 @@
         function setOnlineMatchSearchLocked(locked) {
             document.getElementById("online-find-match").disabled = locked;
             document.getElementById("online-create-party").disabled = locked;
-            document.querySelectorAll("[data-online-mode], [data-online-difficulty], [data-online-visibility]")
+            document.querySelectorAll("[data-online-mode], [data-online-difficulty], [data-online-visibility], #online-friendly-fire")
                 .forEach(button => { button.disabled = locked; });
         }
 
@@ -2107,7 +2335,7 @@
             try {
                 const { data: match, error: matchError } = await communityClient
                     .from("online_matches")
-                    .select("host_id, mode, difficulty, status, max_players, is_party")
+                    .select("host_id, mode, difficulty, status, max_players, is_party, friendly_fire, phase, winner_team")
                     .eq("id", onlineMatchId)
                     .maybeSingle();
                 if (matchError) throw matchError;
@@ -2118,14 +2346,14 @@
 
                 const { data: players, error: playersError } = await communityClient
                     .from("online_match_players")
-                    .select("user_id, is_ready")
+                    .select("user_id, is_ready, team, is_alive, stage, game_state")
                     .eq("match_id", onlineMatchId);
                 if (playersError) throw playersError;
                 const matchPlayers = players || [];
                 const playerCount = matchPlayers.length;
                 const readyCount = matchPlayers.filter(player => player.is_ready).length;
                 const settings = onlineModeSettings[match.mode];
-                const canStart = settings && playerCount >= settings.minPlayers &&
+                const canStart = settings && playerCount === match.max_players &&
                     matchPlayers.every(player => player.is_ready);
 
                 if (match.status === "waiting" && canStart && match.host_id === communityUser.id) {
@@ -2143,14 +2371,16 @@
                     if (startedMatchError) throw startedMatchError;
                     match.status = startedMatch.status;
                 }
-                if (match.status === "cancelled" || match.status === "finished") {
+                if (match.status === "cancelled") {
                     resetOnlineMatchControls(
-                        match.status === "finished" ? "Match finished." : "Match cancelled.");
+                        "Match cancelled.");
                     return;
                 }
 
                 onlineMatchHostId = match.host_id;
                 onlineMatchIsParty = match.is_party;
+                onlineFriendlyFire = Boolean(match.friendly_fire);
+                document.getElementById("online-friendly-fire").checked = onlineFriendlyFire;
                 onlineVisibility = match.is_party ? "private" : "public";
                 document.querySelectorAll("[data-online-visibility]").forEach(button => {
                     button.setAttribute("aria-pressed",
@@ -2158,6 +2388,7 @@
                 });
                 onlineMode = match.mode;
                 onlineDifficulty = match.difficulty;
+                onlineMatchPhase = match.phase || "easy";
                 document.querySelectorAll("[data-online-mode]").forEach(button => {
                     button.setAttribute("aria-pressed", String(button.dataset.onlineMode === onlineMode));
                 });
@@ -2166,18 +2397,32 @@
                         String(button.dataset.onlineDifficulty === onlineDifficulty));
                 });
                 const ownPlayer = matchPlayers.find(player => player.user_id === communityUser.id);
+                const ownPlayerEliminated = ownPlayer &&
+                    ["eliminated", "abandoned"].includes(ownPlayer.stage);
                 document.getElementById("online-match-status").textContent =
-                    `${match.mode} · ${match.difficulty} · ${playerCount}/${match.max_players} players · ` +
+                    `${match.mode} · Easy then PvP · Friendly fire ${onlineFriendlyFire ? "on" : "off"} · ` +
+                    `${playerCount}/${match.max_players} players · ` +
                     `${readyCount}/${playerCount} ready`;
                 document.getElementById("online-find-match").hidden = true;
                 document.getElementById("online-create-party").hidden = true;
-                document.getElementById("online-cancel-match").hidden = false;
+                document.getElementById("online-cancel-match").hidden = Boolean(ownPlayerEliminated);
+                document.getElementById("online-cancel-match").textContent =
+                    match.status === "in_progress" ? "Leave Match" :
+                        onlineMatchIsParty ? "Leave Party" : "Cancel Matchmaking";
                 document.getElementById("online-ready-up").hidden =
                     match.status !== "waiting" || !ownPlayer || ownPlayer.is_ready;
                 document.getElementById("online-unready").hidden =
                     match.status !== "waiting" || !ownPlayer || !ownPlayer.is_ready;
                 setOnlineMatchSearchLocked(true);
                 await renderOnlineMatchPlayers(matchPlayers);
+                if (match.status === "finished") {
+                    if (onlineGameStartedMatchId === onlineMatchId) {
+                        await showOnlineMatchResult(match.winner_team, matchPlayers);
+                    } else {
+                        resetOnlineMatchControls("Match finished.");
+                    }
+                    return;
+                }
                 if (match.status === "in_progress") startOnlineGame(match);
             } catch (error) {
                 showCommunityError(error);
@@ -2188,14 +2433,46 @@
             }
         }
 
+        async function showOnlineMatchResult(winnerTeam, players) {
+            const ownPlayer = players.find(player => player.user_id === communityUser?.id);
+            onlineMatchWon = ownPlayer?.team === winnerTeam;
+            if (onlineGameSyncTimer) {
+                clearInterval(onlineGameSyncTimer);
+                onlineGameSyncTimer = null;
+            }
+            resetOnlineMatchControls(onlineMatchWon ? "Your team won the multiplayer match." :
+                "Your team lost. Return to the multiplayer menu to play again.");
+            if (onlineMatchWon) {
+                gameState = "VICTORY";
+                multiplayerSidebarOpen = false;
+                loadOnlineLeaderboard(onlineMode)
+                    .catch(error => showOnlineLeaderboardError(error, onlineMode));
+            } else {
+                gameState = "MULTIPLAYER";
+                multiplayerSidebarOpen = true;
+                document.getElementById("online-match-status").textContent =
+                    "Your team lost. You are back in the multiplayer menu.";
+            }
+            syncCommunitySidebar();
+        }
+
         async function renderOnlineMatchPlayers(players) {
             const container = document.getElementById("online-match-players");
             container.replaceChildren();
-            if (!players.length) return;
+            if (!players.length) {
+                onlineRemotePlayers = [];
+                return;
+            }
             const { data: profiles, error } = await communityClient.from("profiles")
                 .select("id, username")
                 .in("id", players.map(player => player.user_id));
             if (error) throw error;
+            onlineRemotePlayers = players
+                .filter(player => player.user_id !== communityUser.id)
+                .map(player => ({
+                    ...player,
+                    username: (profiles || []).find(profile => profile.id === player.user_id)?.username || "Player"
+                }));
             players.forEach(player => {
                 const row = document.createElement("article");
                 row.className = "community-entry online-player-row";
@@ -2206,13 +2483,17 @@
                     : profile?.username || "Player";
                 const ready = document.createElement("small");
                 ready.className = "online-player-ready";
-                ready.textContent = player.is_ready ? "Ready" : "Not ready";
+                const stageLabel = player.stage === "combat" ? "Ready for PvP" :
+                    player.stage === "eliminated" || player.stage === "abandoned" ? "Out" :
+                        player.is_ready ? "Ready" : "Not ready";
+                ready.textContent = `${player.team ? `Team ${player.team} · ` : ""}${stageLabel}`;
                 row.append(name, ready);
                 container.appendChild(row);
             });
         }
 
         function resetOnlineMatchControls(message) {
+            if (onlineGameStartedMatchId) restoreOfflineGameSettings();
             onlineMatchId = null;
             onlineMatchHostId = null;
             onlineMatchIsParty = false;
@@ -2238,18 +2519,302 @@
 
         function startOnlineGame(match) {
             if (onlineGameStartedMatchId === onlineMatchId) return;
+            onlineOriginalDifficulty = difficulty;
+            onlineOriginalGameMode = gameMode;
+            onlineOriginalGameSettingsSaved = true;
             onlineGameStartedMatchId = onlineMatchId;
             if (onlineMatchRefreshTimer) {
                 clearInterval(onlineMatchRefreshTimer);
                 onlineMatchRefreshTimer = null;
             }
             onlineMode = match.mode;
-            onlineDifficulty = match.difficulty;
-            difficulty = match.difficulty;
+            onlineDifficulty = "easy";
+            onlineFriendlyFire = Boolean(match.friendly_fire);
+            onlineMatchPhase = match.phase || "easy";
+            onlineMatchWon = false;
+            onlineLocalStage = "easy";
+            onlineMatchTeam = null;
+            onlineCombatSpawned = false;
+            onlineEliminationHandled = false;
+            onlineWinRecorded = false;
+            onlineProcessedProjectileIds.clear();
+            onlineRemoteProjectilePositions.clear();
+            onlineShotEvents = [];
+            difficulty = "easy";
+            gameMode = "Rounds";
             multiplayerSidebarOpen = false;
             communityOpen = false;
             syncCommunitySidebar();
             startNewGame();
+            startOnlineGameSync();
+        }
+
+        function startOnlineGameSync() {
+            if (onlineGameSyncTimer) clearInterval(onlineGameSyncTimer);
+            onlineGameSyncTimer = setInterval(() => {
+                syncOnlineGame().catch(error => {
+                    console.error("Multiplayer game sync failed.", error);
+                    document.getElementById("online-match-status").textContent =
+                        `Game sync error: ${error.message || "Connection lost."}`;
+                });
+            }, 500);
+            syncOnlineGame().catch(error => {
+                console.error("Multiplayer game sync failed.", error);
+            });
+        }
+
+        async function syncOnlineGame() {
+            if (!onlineMatchId || !communityUser || !communityClient || onlineGameSyncInProgress) return;
+            onlineGameSyncInProgress = true;
+            try {
+                const { data: match, error: matchError } = await communityClient
+                    .from("online_matches")
+                    .select("status, phase, winner_team, friendly_fire")
+                    .eq("id", onlineMatchId)
+                    .maybeSingle();
+                if (matchError) throw matchError;
+                if (!match) return;
+                if (match.status === "finished") {
+                    await refreshOnlineMatchStatus();
+                    return;
+                }
+                if (match.status !== "in_progress") return;
+                onlineMatchPhase = match.phase;
+                onlineFriendlyFire = Boolean(match.friendly_fire);
+
+                const { data: players, error: playersError } = await communityClient
+                    .from("online_match_players")
+                    .select("user_id, team, is_alive, stage, game_state")
+                    .eq("match_id", onlineMatchId);
+                if (playersError) throw playersError;
+                const participants = players || [];
+                const ownPlayer = participants.find(participant =>
+                    participant.user_id === communityUser.id);
+                if (!ownPlayer) return;
+                onlineMatchTeam = ownPlayer.team;
+                onlineRemotePlayers = participants
+                    .filter(participant => participant.user_id !== communityUser.id)
+                    .map(participant => ({
+                        ...participant,
+                        username: onlineRemotePlayers.find(remote =>
+                            remote.user_id === participant.user_id)?.username || "Player"
+                    }));
+
+                if (ownPlayer.stage === "abandoned") {
+                    return;
+                }
+                if (!ownPlayer.is_alive && !onlineEliminationHandled) {
+                    handleOnlineElimination();
+                }
+
+                if (onlineMatchPhase === "easy" &&
+                    participants.every(participant => participant.stage !== "easy")) {
+                    const { error } = await communityClient.rpc("start_online_combat", {
+                        combat_match_id: onlineMatchId
+                    });
+                    if (error) throw error;
+                    onlineMatchPhase = "combat";
+                }
+                if (onlineMatchPhase === "combat" && onlineLocalStage === "combat" &&
+                    ["PLAYING", "PAUSED", "CONTROLS", "AUDIO"].includes(gameState)) {
+                    prepareOnlineCombat(participants);
+                    checkOnlineMatchWinner(participants);
+                    receiveOnlineProjectiles(participants);
+                }
+            } finally {
+                onlineGameSyncInProgress = false;
+            }
+        }
+
+        function prepareOnlineCombat(players) {
+            if (onlineCombatSpawned || !onlineMatchTeam) return;
+            const teammates = players
+                .filter(participant => participant.team === onlineMatchTeam)
+                .map(participant => participant.user_id)
+                .sort();
+            const playerIndex = teammates.indexOf(communityUser.id);
+            if (playerIndex < 0) return;
+            const sideX = onlineMatchTeam === 1 ? 180 : canvas.width - 180;
+            player.x = sideX;
+            player.y = canvas.height * (playerIndex + 1) / (teammates.length + 1);
+            projectiles = [];
+            onlineShotEvents = [];
+            onlineCombatSpawned = true;
+        }
+
+        function checkOnlineMatchWinner(players) {
+            const livingTeams = [...new Set(players
+                .filter(participant => participant.is_alive)
+                .map(participant => participant.team))];
+            if (livingTeams.length !== 1 || onlineWinRecorded || !onlineMatchTeam ||
+                livingTeams[0] !== onlineMatchTeam) return;
+            const livingWinners = players
+                .filter(participant => participant.is_alive && participant.team === onlineMatchTeam)
+                .map(participant => participant.user_id)
+                .sort();
+            if (livingWinners[0] !== communityUser.id) return;
+            onlineWinRecorded = true;
+            communityClient.rpc("record_online_match_win", { won_match_id: onlineMatchId })
+                .then(({ error }) => {
+                    if (error) throw error;
+                })
+                .catch(error => {
+                    onlineWinRecorded = false;
+                    console.error("Could not save multiplayer match result.", error);
+                });
+        }
+
+        function receiveOnlineProjectiles(players) {
+            const now = Date.now();
+            players.forEach(participant => {
+                if (!participant.is_alive || (!onlineFriendlyFire &&
+                    participant.team === onlineMatchTeam)) return;
+                const projectiles = Array.isArray(participant.game_state?.projectiles)
+                    ? participant.game_state.projectiles
+                    : [];
+                projectiles.forEach(projectile => {
+                    if (!projectile.id || onlineProcessedProjectileIds.has(projectile.id)) return;
+                    const key = `${participant.user_id}:${projectile.id}`;
+                    const createdAt = Number(projectile.created_at);
+                    const now = Date.now();
+                    if (!Number.isFinite(createdAt)) return;
+                    const previous = onlineRemoteProjectilePositions.get(key);
+                    const endAt = Math.max(createdAt, Math.min(now, createdAt + 6000));
+                    const startAt = Math.min(endAt,
+                        Math.max(createdAt, previous?.checkedAt || now - 300));
+                    const startFrames = (startAt - createdAt) / (1000 / 60);
+                    const endFrames = (endAt - createdAt) / (1000 / 60);
+                    const startX = Number(projectile.x) + Number(projectile.vx) * startFrames;
+                    const startY = Number(projectile.y) + Number(projectile.vy) * startFrames;
+                    const endX = Number(projectile.x) + Number(projectile.vx) * endFrames;
+                    const endY = Number(projectile.y) + Number(projectile.vy) * endFrames;
+                    onlineRemoteProjectilePositions.set(key, { checkedAt: now });
+                    const distance = distanceFromPointToSegment(
+                        player.x, player.y, startX, startY, endX, endY
+                    );
+                    if (distance <= player.radius + Number(projectile.radius || 5)) {
+                        onlineProcessedProjectileIds.add(projectile.id);
+                        applyPlayerDamage(Number(projectile.damage) || 0);
+                        createExplosion(player.x, player.y, projectile.color || "#ef4444");
+                    }
+                });
+            });
+            if (onlineRemoteProjectilePositions.size > 200) {
+                onlineRemoteProjectilePositions.clear();
+            }
+            if (onlineProcessedProjectileIds.size > 400) {
+                onlineProcessedProjectileIds.clear();
+            }
+            publishOnlineGameState().catch(error => {
+                console.error("Could not publish multiplayer game state.", error);
+            });
+        }
+
+        function distanceFromPointToSegment(pointX, pointY, startX, startY, endX, endY) {
+            const segmentX = endX - startX;
+            const segmentY = endY - startY;
+            const segmentLengthSquared = segmentX * segmentX + segmentY * segmentY;
+            if (!segmentLengthSquared) return Math.hypot(pointX - startX, pointY - startY);
+            const projection = Math.max(0, Math.min(1,
+                ((pointX - startX) * segmentX + (pointY - startY) * segmentY) /
+                segmentLengthSquared));
+            return Math.hypot(
+                pointX - (startX + projection * segmentX),
+                pointY - (startY + projection * segmentY)
+            );
+        }
+
+        async function publishOnlineGameState(force = false) {
+            if (!onlineMatchId || !communityUser || !communityClient ||
+                !player) return;
+            if (onlineStatePublishInProgress) {
+                if (!force) return onlineStatePublishPromise;
+                try {
+                    await onlineStatePublishPromise;
+                } catch (error) {
+                    console.error("Previous multiplayer state update failed.", error);
+                }
+                return publishOnlineGameState(true);
+            }
+            const now = Date.now();
+            if (!force && now - onlineLastStatePublishAt < 200) return;
+            onlineLastStatePublishAt = now;
+            onlineStatePublishInProgress = true;
+            const projectiles = onlineLocalStage === "combat"
+                ? projectilesForOnlineState()
+                : [];
+            onlineStatePublishPromise = communityClient.from("online_match_players")
+                    .update({
+                        is_alive: player.hp > 0 && !onlineEliminationHandled,
+                        stage: onlineLocalStage,
+                        game_state: {
+                            x: player.x,
+                            y: player.y,
+                            hp: Math.max(0, player.hp),
+                            max_hp: player.maxHp,
+                            projectiles,
+                            updated_at: now
+                        }
+                    })
+                    .eq("match_id", onlineMatchId)
+                    .eq("user_id", communityUser.id);
+            try {
+                const { error } = await onlineStatePublishPromise;
+                if (error) throw error;
+            } finally {
+                onlineStatePublishInProgress = false;
+                onlineStatePublishPromise = null;
+            }
+        }
+
+        function projectilesForOnlineState() {
+            const cutoff = Date.now() - 6000;
+            onlineShotEvents = onlineShotEvents.filter(shot => shot.created_at >= cutoff);
+            return onlineShotEvents.slice(-45);
+        }
+
+        async function completeOnlineEasyStage() {
+            if (onlineLocalStage !== "easy" || !onlineMatchId) return;
+            onlineLocalStage = "combat";
+            gameState = "PLAYING";
+            waveActive = false;
+            enemies = [];
+            projectiles = [];
+            showBuildModal = false;
+            document.getElementById("online-match-status").textContent =
+                "Easy mode complete. Waiting for the other players before team combat.";
+            await publishOnlineGameState(true);
+        }
+
+        async function eliminateOnlinePlayer() {
+            if (onlineEliminationHandled || !onlineMatchId) return;
+            onlineEliminationHandled = true;
+            player.hp = 0;
+            onlineLocalStage = "eliminated";
+            try {
+                await publishOnlineGameState(true);
+            } catch (error) {
+                console.error("Could not save multiplayer elimination.", error);
+            }
+            handleOnlineElimination();
+        }
+
+        function handleOnlineElimination() {
+            if (onlineEliminationHandled && gameState === "MULTIPLAYER") return;
+            onlineEliminationHandled = true;
+            restoreOfflineGameSettings();
+            gameState = "MULTIPLAYER";
+            multiplayerSidebarOpen = true;
+            document.getElementById("online-match-status").textContent =
+                "You were eliminated. Your team is still fighting; you are back in the multiplayer menu.";
+            syncCommunitySidebar();
+        }
+
+        function restoreOfflineGameSettings() {
+            if (!onlineOriginalGameSettingsSaved) return;
+            difficulty = onlineOriginalDifficulty;
+            gameMode = onlineOriginalGameMode;
+            onlineOriginalGameSettingsSaved = false;
         }
 
         async function cancelOnlineMatch() {
@@ -2274,6 +2839,46 @@
             } catch (error) {
                 showCommunityError(error);
             }
+        }
+
+        async function returnToMainMenu() {
+            if (onlineMatchId && onlineGameStartedMatchId === onlineMatchId) {
+                try {
+                    const { data: penaltyEnd, error } = await communityClient.rpc(
+                        "abandon_online_match",
+                        { abandoned_match_id: onlineMatchId }
+                    );
+                    if (error) throw error;
+                    onlinePenaltyUntil = Date.parse(penaltyEnd);
+                    localStorage.setItem(
+                        `spellbound-online-penalty:${communityUser.id}`,
+                        String(onlinePenaltyUntil)
+                    );
+                    if (onlineGameSyncTimer) {
+                        clearInterval(onlineGameSyncTimer);
+                        onlineGameSyncTimer = null;
+                    }
+                    resetOnlineMatchControls("You left the match. Multiplayer is locked for 10 minutes.");
+                } catch (error) {
+                    showCommunityError(error);
+                    document.getElementById("online-match-status").textContent =
+                        error.message || "Could not leave the multiplayer match.";
+                    return;
+                }
+            } else if (onlineMatchId) {
+                await cancelOnlineMatch();
+            }
+            gameState = "MENU";
+            multiplayerSidebarOpen = false;
+            syncCommunitySidebar();
+        }
+
+        function returnToMultiplayerMenu() {
+            onlineMatchWon = false;
+            multiplayerSidebarOpen = true;
+            gameState = "MULTIPLAYER";
+            syncCommunitySidebar();
+            loadOnlineSocial().catch(showCommunityError);
         }
 
         function handleAccountButton() {
@@ -2327,6 +2932,13 @@
         }
 
         function closeMultiplayerSidebar() {
+            if (onlineEliminationHandled && onlineMatchId) {
+                if (onlineGameSyncTimer) {
+                    clearInterval(onlineGameSyncTimer);
+                    onlineGameSyncTimer = null;
+                }
+                resetOnlineMatchControls("You left the multiplayer match.");
+            }
             multiplayerSidebarOpen = false;
             gameState = "MENU";
             syncCommunitySidebar();
@@ -2354,10 +2966,16 @@
             });
             if (view === "leaderboard" && communityClient) {
                 loadLeaderboard(selectedLeaderboardDifficulty).catch(showLeaderboardError);
+                loadOnlineLeaderboards();
             }
         }
 
         async function signOutCommunity() {
+            if (onlineMatchId && onlineGameStartedMatchId === onlineMatchId) {
+                document.getElementById("online-match-status").textContent =
+                    "To leave during a match, choose Main Menu. This applies the 10-minute multiplayer penalty.";
+                return;
+            }
             try {
                 const { error } = await communityClient.auth.signOut();
                 if (error) throw error;
@@ -2384,6 +3002,9 @@
                         String(option.dataset.onlineMode === onlineMode));
                 });
             });
+        });
+        document.getElementById("online-friendly-fire").addEventListener("change", event => {
+            onlineFriendlyFire = event.currentTarget.checked;
         });
         document.querySelectorAll("[data-online-visibility]").forEach((button) => {
             button.addEventListener("click", () => {
@@ -2574,7 +3195,8 @@
                 toggleFullscreen();
             } else if (keyLower === keybinds.pause && (gameState === 'PLAYING' || gameState === 'PAUSED')) {
                 togglePause();
-            } else if (keyLower === keybinds.build && (gameState === 'PLAYING' || gameState === 'INTERMISSION')) {
+            } else if (!onlineMatchId && keyLower === keybinds.build &&
+                (gameState === 'PLAYING' || gameState === 'INTERMISSION')) {
                 showBuildModal = !showBuildModal;
             } else if (keyLower === keybinds.skilltree && (gameState === 'PLAYING' || gameState === 'INTERMISSION')) {
                 openSkillShop();
@@ -2954,14 +3576,14 @@
         }
 
         function openBuildMenu() {
-            if (gameState === 'PLAYING' || gameState === 'INTERMISSION') {
+            if (!onlineMatchId && (gameState === 'PLAYING' || gameState === 'INTERMISSION')) {
                 gameState = 'PAUSED';
                 showBuildModal = false;
             }
         }
 
         function openSkillShop() {
-            if (gameState === 'PLAYING' || gameState === 'INTERMISSION') {
+            if (!onlineMatchId && (gameState === 'PLAYING' || gameState === 'INTERMISSION')) {
                 skillTreeReturnState = gameState;
                 gameState = 'SKILLTREE';
                 showBuildModal = false;
@@ -3530,8 +4152,13 @@
             player.hp -= damage * damageMultiplier;
             playSoundEffect(110, 0.16, 0.09, "sawtooth");
             if (player.hp <= 0) {
-                gameState = 'GAMEOVER';
                 runTimerActive = false;
+                player.hp = 0;
+                if (onlineMatchId) {
+                    eliminateOnlinePlayer();
+                } else {
+                    gameState = 'GAMEOVER';
+                }
             }
         }
         function applyPlayerSkillBurst() {
@@ -3630,6 +4257,44 @@
             waveTimer = 0;
         }
 
+        function updateOnlineCombat(deltaTime, frameScale) {
+            const now = Date.now();
+            const activeSpell = spells[currentSpellKey];
+            if (mouse.down && !showBuildModal && now - lastShotTime > activeSpell.cooldown &&
+                player.mana >= activeSpell.manaCost) {
+                player.mana -= activeSpell.manaCost;
+                lastShotTime = now;
+                const angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
+                const speed = activeSpell.speed * (1 + getSkillEffect("spellSpeed"));
+                const shot = {
+                    id: crypto.randomUUID(),
+                    x: player.x,
+                    y: player.y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    radius: activeSpell.radius,
+                    color: activeSpell.color,
+                    damage: activeSpell.baseDamage * (1 + getSkillEffect("spellDamage")),
+                    created_at: now
+                };
+                onlineShotEvents.push(shot);
+                projectiles.push({ ...shot, onlineId: shot.id });
+            }
+
+            for (let index = projectiles.length - 1; index >= 0; index--) {
+                const projectile = projectiles[index];
+                projectile.x += projectile.vx * frameScale;
+                projectile.y += projectile.vy * frameScale;
+                if (projectile.x < 0 || projectile.x > canvas.width ||
+                    projectile.y < 0 || projectile.y > canvas.height) {
+                    projectiles.splice(index, 1);
+                }
+            }
+            publishOnlineGameState().catch(error => {
+                console.error("Could not publish multiplayer game state.", error);
+            });
+        }
+
         window.addEventListener("keydown", (e) => {
             let k = e.key.toLowerCase();
             if (!isTextEntryTarget(e.target) &&
@@ -3671,6 +4336,22 @@
             if (player.hp < player.maxHp && healthRegenerationPerSecond > 0) {
                 player.hp = Math.min(player.maxHp,
                     player.hp + healthRegenerationPerSecond * deltaTime / 1000);
+            }
+
+            if (onlineMatchId) {
+                publishOnlineGameState().catch(error => {
+                    console.error("Could not publish multiplayer game state.", error);
+                });
+                if (onlineMatchPhase === "combat" && onlineLocalStage === "combat") {
+                    updateOnlineCombat(deltaTime, frameScale);
+                    return;
+                }
+                if (onlineLocalStage !== "easy") {
+                    publishOnlineGameState().catch(error => {
+                        console.error("Could not publish multiplayer game state.", error);
+                    });
+                    return;
+                }
             }
 
             defenses.forEach(def => def.update(frameScale));
@@ -3724,9 +4405,17 @@
                 player.gold += bonusGold + 30;
 
                 if (currentRound >= maxRounds) {
-                    gameState = 'VICTORY';
                     runTimerActive = false;
-                    if (isLeaderboardRun()) {
+                    if (onlineMatchId) {
+                        completeOnlineEasyStage().catch(error => {
+                            console.error("Could not complete the Easy stage.", error);
+                            document.getElementById("online-match-status").textContent =
+                                `Could not advance to PvP: ${error.message || "Database request failed."}`;
+                        });
+                    } else {
+                        gameState = 'VICTORY';
+                    }
+                    if (!onlineMatchId && isLeaderboardRun()) {
                         submitLeaderboardTime(Math.floor(runElapsedMs), difficulty).catch(showLeaderboardError);
                     }
                 } else {
@@ -4139,6 +4828,47 @@
 
             enemies.forEach(e => e.draw());
 
+            if (onlineMatchId && onlineMatchPhase === "combat") {
+                onlineRemotePlayers.forEach(remote => {
+                    if (!remote.is_alive) return;
+                    const state = remote.game_state || {};
+                    const remoteX = Number(state.x);
+                    const remoteY = Number(state.y);
+                    if (!Number.isFinite(remoteX) || !Number.isFinite(remoteY)) return;
+                    const teamColor = remote.team === onlineMatchTeam ? "#22c55e" : "#ef4444";
+                    ctx.beginPath();
+                    ctx.arc(remoteX, remoteY, player.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = remote.team === onlineMatchTeam ? "#0e7490" : "#b91c1c";
+                    ctx.fill();
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = teamColor;
+                    ctx.stroke();
+                    ctx.fillStyle = "#f8fafc";
+                    ctx.font = "12px Georgia, serif";
+                    ctx.textAlign = "center";
+                    ctx.fillText(remote.username || "Player", remoteX, remoteY - player.radius - 12);
+                    const remoteHealth = Math.max(0, Math.min(1,
+                        Number(state.hp) / Math.max(1, Number(state.max_hp) || 100)));
+                    ctx.fillStyle = "#7f1d1d";
+                    ctx.fillRect(remoteX - 20, remoteY - player.radius - 8, 40, 4);
+                    ctx.fillStyle = "#22c55e";
+                    ctx.fillRect(remoteX - 20, remoteY - player.radius - 8, 40 * remoteHealth, 4);
+
+                    (Array.isArray(state.projectiles) ? state.projectiles : []).forEach(projectile => {
+                        const projectileAge = Math.max(0,
+                            Date.now() - Number(projectile.created_at));
+                        const framesTravelled = Math.min(360, projectileAge / (1000 / 60));
+                        ctx.beginPath();
+                        ctx.arc(
+                            Number(projectile.x) + Number(projectile.vx) * framesTravelled,
+                            Number(projectile.y) + Number(projectile.vy) * framesTravelled,
+                            Math.max(2, Number(projectile.radius) || 5), 0, Math.PI * 2);
+                        ctx.fillStyle = projectile.color || "#ef4444";
+                        ctx.fill();
+                    });
+                });
+            }
+
             if (sidekickUnlocked) {
                 const sidekickPosition = getSidekickPosition();
                 ctx.beginPath();
@@ -4185,6 +4915,26 @@
             ctx.strokeStyle = "#fbbf24"; ctx.lineWidth = 4; ctx.stroke(); ctx.closePath();
 
             drawHUD();
+            if (onlineMatchId && onlineLocalStage === "combat" && onlineMatchPhase === "easy") {
+                ctx.fillStyle = "rgba(9, 9, 14, 0.8)";
+                ctx.fillRect(canvas.width / 2 - 280, 24, 560, 40);
+                ctx.fillStyle = "#f8fafc";
+                ctx.font = "bold 18px Georgia, serif";
+                ctx.textAlign = "center";
+                ctx.fillText("Easy stage complete — waiting for all players to finish", canvas.width / 2, 50);
+                ctx.textAlign = "left";
+            } else if (onlineMatchId && onlineMatchPhase === "combat") {
+                ctx.fillStyle = "rgba(9, 9, 14, 0.8)";
+                ctx.fillRect(canvas.width / 2 - 190, 24, 380, 36);
+                ctx.fillStyle = "#f8fafc";
+                ctx.font = "bold 17px Georgia, serif";
+                ctx.textAlign = "center";
+                ctx.fillText(
+                    `${onlineMode.toUpperCase()} · TEAM ${onlineMatchTeam} · FF ${onlineFriendlyFire ? "ON" : "OFF"}`,
+                    canvas.width / 2, 48
+                );
+                ctx.textAlign = "left";
+            }
             if (selectedDefenseType) {
                 ctx.fillStyle = "#f3f4f6";
                 ctx.font = "16px Georgia, serif";
@@ -4319,7 +5069,7 @@
             share: { x: 655, y: 550, w: 230, h: 54, radius: 12 }
         };
 
-        const GAME_VERSION = "1.0";
+        const GAME_VERSION = "1.01";
         let shareStatus = "";
         let shareStatusExpiresAt = 0;
 
@@ -5104,7 +5854,16 @@
                     communityAccountReturn = false;
                     handleAccountButton();
                 });
-            drawButton(canvas.width / 2 - 100, my + 400, 200, 45, "#3f3224", "#fff", "MAIN MENU", () => gameState = 'MENU');
+            drawButton(canvas.width / 2 - 100, my + 400, 200, 45, "#3f3224", "#fff", "MAIN MENU",
+                () => returnToMainMenu());
+            if (onlineMatchId) {
+                ctx.fillStyle = "#fca5a5";
+                ctx.font = "13px Georgia, serif";
+                ctx.textAlign = "center";
+                ctx.fillText("The multiplayer match continues while this menu is open.",
+                    canvas.width / 2, my + 465);
+                ctx.textAlign = "left";
+            }
         }
 
         function drawEndScreen(title, subtitle, btnText, callback) {
@@ -5114,7 +5873,8 @@
             ctx.fillStyle = title.includes("VICTORY") ? "#22c55e" : "#ef4444";
             ctx.font = "bold 45px Georgia, serif"; ctx.fillText(title, canvas.width / 2, 220);
             ctx.fillStyle = "#cbd5e1"; ctx.font = "20px Georgia, serif";
-            ctx.fillText(subtitle, canvas.width / 2, 280);
+            ctx.fillText(onlineMatchWon ? "Your team won the multiplayer match!" : subtitle,
+                canvas.width / 2, 280);
             ctx.fillText(`Final Score: ${score} | Gold: 🪙 ${player.gold}`, canvas.width / 2, 320);
             ctx.fillText(`Time: ${formatElapsedTime(runElapsedMs)}`, canvas.width / 2, 355);
             drawButton(canvas.width / 2 - 100, 390, 200, 50, "#5c4033", "#fff", btnText, callback);
@@ -5250,10 +6010,12 @@
                 ctx.fillStyle = "#09090e";
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
             } else if (gameState === 'CONTROLS') {
+                if (onlineMatchId) updateGame(deltaTime);
                 drawControlsMenu();
             } else if (gameState === 'DIFFICULTY') {
                 drawDifficultyMenu();
             } else if (gameState === 'AUDIO') {
+                if (onlineMatchId) updateGame(deltaTime);
                 drawAudioSettings();
             } else if (gameState === 'PLAYING') {
                 if (!showBuildModal) updateGame(deltaTime);
@@ -5263,6 +6025,7 @@
                 drawIntermissionScreen();
                 if (showBuildModal) drawBuildModal();
             } else if (gameState === 'PAUSED') {
+                if (onlineMatchId) updateGame(deltaTime);
                 drawGameScene();
                 drawPauseScreen();
             } else if (gameState === 'SKILLTREE') {
@@ -5275,8 +6038,13 @@
                 drawEndScreen("DEFEAT", "Your crown was seized by the rival kingdom.", "TRY AGAIN", () => startNewGame());
                 drawButton(canvas.width / 2 - 100, 490, 200, 50, "#5c4033", "#fff", "RETURN TO MENU", () => gameState = 'MENU');
             } else if (gameState === 'VICTORY') {
-                drawEndScreen("VICTORY!", "You successfully crushed the rival kingdom and united the realm!", "PLAY AGAIN", () => startNewGame());
-                drawButton(canvas.width / 2 - 100, 700, 200, 50, "#5c4033", "#fff", "RETURN TO MENU", () => gameState = 'MENU');
+                drawEndScreen("VICTORY!",
+                    onlineMatchWon ? "Your team defeated the opposing team." :
+                        "You successfully crushed the rival kingdom and united the realm!",
+                    onlineMatchWon ? "MULTIPLAYER MENU" : "PLAY AGAIN",
+                    onlineMatchWon ? returnToMultiplayerMenu : () => startNewGame());
+                drawButton(canvas.width / 2 - 100, 700, 200, 50, "#5c4033", "#fff",
+                    "RETURN TO MENU", onlineMatchWon ? returnToMultiplayerMenu : returnToMainMenu);
             }
 
             // If build modal is toggled open during gameplay, pause background game updates
@@ -5298,6 +6066,7 @@
             ctx.textAlign = "right";
             ctx.fillText(`FPS: ${fps}`, canvas.width - 25, 32);
             ctx.textAlign = "left";
+            updateOnlinePenaltyCountdown();
 
             mouse.clicked = false;
             requestAnimationFrame(loop);

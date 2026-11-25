@@ -43,7 +43,28 @@ create table if not exists public.online_matches (
 );
 
 alter table public.online_matches
-    add column if not exists is_party boolean not null default false;
+    drop constraint if exists online_matches_mode_check;
+alter table public.online_matches
+    add constraint online_matches_mode_check
+        check (mode in ('duel', 'co-op', 'ffa', '1v1', '2v2', '3v3', '4v4'));
+alter table public.online_matches
+    drop constraint if exists online_matches_mode_player_count_check;
+alter table public.online_matches
+    add constraint online_matches_mode_player_count_check check (
+        (mode in ('duel', '1v1') and max_players = 2)
+        or (mode = '2v2' and max_players = 4)
+        or (mode = '3v3' and max_players = 6)
+        or (mode = '4v4' and max_players = 8)
+        or (mode = 'co-op' and max_players between 2 and 4)
+        or (mode = 'ffa' and max_players between 2 and 8)
+    );
+
+alter table public.online_matches
+    add column if not exists is_party boolean not null default false,
+    add column if not exists friendly_fire boolean not null default false,
+    add column if not exists phase text not null default 'easy'
+        check (phase in ('easy', 'combat')),
+    add column if not exists winner_team integer;
 
 create table if not exists public.online_match_players (
     match_id uuid not null references public.online_matches (id) on delete cascade,
@@ -55,7 +76,12 @@ create table if not exists public.online_match_players (
 );
 
 alter table public.online_match_players
-    add column if not exists is_ready boolean not null default false;
+    add column if not exists is_ready boolean not null default false,
+    add column if not exists is_alive boolean not null default true,
+    add column if not exists stage text not null default 'easy'
+        check (stage in ('easy', 'combat', 'eliminated', 'abandoned')),
+    add column if not exists game_state jsonb not null default '{}'::jsonb
+        check (jsonb_typeof(game_state) = 'object');
 
 create or replace function public.require_all_online_players_ready()
 returns trigger
@@ -83,8 +109,12 @@ begin
         from public.online_match_players
         where match_id = new.id;
 
-        if player_count < 2 or ready_count <> player_count then
-            raise exception 'Every player must be ready before the match can start.'
+        if (
+            (new.mode in ('1v1', '2v2', '3v3', '4v4') and player_count <> new.max_players)
+            or (new.mode not in ('1v1', '2v2', '3v3', '4v4') and player_count < 2)
+            or ready_count <> player_count
+        ) then
+            raise exception 'The lobby must be full and every player must be ready before the match can start.'
                 using errcode = '23514';
         end if;
     end if;
@@ -96,6 +126,230 @@ drop trigger if exists require_all_online_players_ready on public.online_matches
 create trigger require_all_online_players_ready
     before update of status on public.online_matches
     for each row execute function public.require_all_online_players_ready();
+
+create or replace function public.assign_online_match_teams()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+    if new.status = 'in_progress' and old.status is distinct from 'in_progress' then
+        with shuffled_players as (
+            select user_id,
+                row_number() over (order by random()) as player_number
+            from public.online_match_players
+            where match_id = new.id
+        )
+        update public.online_match_players as participant
+        set team = case
+            when mod(shuffled_players.player_number - 1, 2) = 0 then 1
+            else 2
+        end,
+            stage = 'easy',
+            is_alive = true
+        from shuffled_players
+        where participant.match_id = new.id
+            and participant.user_id = shuffled_players.user_id;
+    end if;
+    return new;
+end;
+$$;
+
+drop trigger if exists assign_online_match_teams on public.online_matches;
+create trigger assign_online_match_teams
+    after update of status on public.online_matches
+    for each row execute function public.assign_online_match_teams();
+
+create table if not exists public.online_mode_leaderboard (
+    user_id uuid not null references public.profiles (id) on delete cascade,
+    mode text not null check (mode in ('1v1', '2v2', '3v3', '4v4')),
+    username text not null check (char_length(btrim(username)) between 1 and 30),
+    wins bigint not null default 0 check (wins >= 0),
+    updated_at timestamptz not null default now(),
+    primary key (user_id, mode)
+);
+
+create table if not exists public.online_player_penalties (
+    user_id uuid primary key references public.profiles (id) on delete cascade,
+    blocked_until timestamptz not null
+);
+
+create or replace function public.get_online_penalty()
+returns timestamptz
+language sql
+security definer
+set search_path = ''
+as $$
+    select penalty.blocked_until
+    from public.online_player_penalties as penalty
+    where penalty.user_id = (select auth.uid())
+        and penalty.blocked_until > now()
+$$;
+
+create or replace function public.abandon_online_match(abandoned_match_id uuid)
+returns timestamptz
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    penalty_end timestamptz := now() + interval '10 minutes';
+begin
+    update public.online_match_players
+    set is_alive = false,
+        stage = 'abandoned'
+    where match_id = abandoned_match_id
+        and user_id = (select auth.uid())
+        and exists (
+            select 1 from public.online_matches as online_match
+            where online_match.id = abandoned_match_id
+                and online_match.status = 'in_progress'
+        );
+    if not found then
+        raise exception 'You are not in this multiplayer match.'
+            using errcode = '23514';
+    end if;
+
+    insert into public.online_player_penalties (user_id, blocked_until)
+    values ((select auth.uid()), penalty_end)
+    on conflict (user_id) do update
+        set blocked_until = excluded.blocked_until;
+
+    delete from public.online_match_players
+    where match_id = abandoned_match_id
+        and user_id = (select auth.uid());
+
+    return penalty_end;
+end;
+$$;
+
+create or replace function public.start_online_combat(combat_match_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+    if not exists (
+        select 1 from public.online_match_players as participant
+        where participant.match_id = combat_match_id
+            and participant.user_id = (select auth.uid())
+    ) then
+        raise exception 'Only a player in this match can start team combat.'
+            using errcode = '23514';
+    end if;
+
+    perform 1
+    from public.online_matches as online_match
+    where online_match.id = combat_match_id
+        and online_match.status = 'in_progress'
+    for update;
+    if not found then
+        raise exception 'The multiplayer match is not active.'
+            using errcode = '23514';
+    end if;
+    if exists (
+        select 1 from public.online_matches as online_match
+        where online_match.id = combat_match_id and online_match.phase = 'combat'
+    ) then
+        return;
+    end if;
+    if exists (
+        select 1 from public.online_match_players as participant
+        where participant.match_id = combat_match_id and participant.stage = 'easy'
+    ) then
+        raise exception 'All players must finish Easy mode before combat can begin.'
+            using errcode = '23514';
+    end if;
+    update public.online_matches
+    set phase = 'combat', updated_at = now()
+    where id = combat_match_id;
+end;
+$$;
+
+create or replace function public.record_online_match_win(won_match_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    winning_team integer;
+    match_mode text;
+begin
+    select participant.team, online_match.mode
+    into winning_team, match_mode
+    from public.online_match_players as participant
+    join public.online_matches as online_match on online_match.id = participant.match_id
+    where participant.match_id = won_match_id
+        and participant.user_id = (select auth.uid())
+        and participant.is_alive
+        and online_match.status = 'in_progress'
+        and online_match.phase = 'combat'
+    for update of online_match;
+
+    if winning_team is null then
+        raise exception 'Only a living player in combat can report a match win.'
+            using errcode = '23514';
+    end if;
+    if exists (
+        select 1 from public.online_match_players as opponent
+        where opponent.match_id = won_match_id
+            and opponent.team <> winning_team
+            and opponent.is_alive
+    ) then
+        raise exception 'The opposing team still has living players.'
+            using errcode = '23514';
+    end if;
+
+    update public.online_matches
+    set status = 'finished',
+        winner_team = winning_team,
+        updated_at = now()
+    where id = won_match_id and status = 'in_progress';
+    if not found then
+        return;
+    end if;
+
+    insert into public.online_mode_leaderboard as leaderboard
+        (user_id, mode, username, wins)
+    select participant.user_id, match_mode,
+        left(coalesce(profile.username, 'Player'), 30), 1
+    from public.online_match_players as participant
+    join public.profiles as profile on profile.id = participant.user_id
+    where participant.match_id = won_match_id
+        and participant.team = winning_team
+        and participant.stage <> 'abandoned'
+    on conflict (user_id, mode) do update
+        set wins = leaderboard.wins + 1,
+            username = excluded.username,
+            updated_at = now();
+end;
+$$;
+
+create or replace function public.prevent_penalized_online_match_join()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+    if exists (
+        select 1 from public.online_player_penalties as penalty
+        where penalty.user_id = new.user_id and penalty.blocked_until > now()
+    ) then
+        raise exception 'Multiplayer is locked until your 10-minute leave penalty expires.'
+            using errcode = '23514';
+    end if;
+    return new;
+end;
+$$;
+
+drop trigger if exists prevent_penalized_online_match_join on public.online_match_players;
+create trigger prevent_penalized_online_match_join
+    before insert on public.online_match_players
+    for each row execute function public.prevent_penalized_online_match_join();
 
 create table if not exists public.online_party_invites (
     id bigint generated by default as identity primary key,
@@ -331,6 +585,8 @@ create index if not exists community_posts_created_at_idx
     on public.community_posts (created_at desc);
 create index if not exists community_messages_created_at_idx
     on public.community_messages (created_at desc);
+create index if not exists online_mode_leaderboard_rank_idx
+    on public.online_mode_leaderboard (mode asc, wins desc, updated_at asc);
 drop index if exists public.normal_mode_leaderboard_rank_idx;
 create index normal_mode_leaderboard_rank_idx
     on public.normal_mode_leaderboard (difficulty asc, best_time_ms asc, updated_at asc);
@@ -345,6 +601,8 @@ alter table public.player_blocks enable row level security;
 alter table public.online_matches enable row level security;
 alter table public.online_match_players enable row level security;
 alter table public.online_party_invites enable row level security;
+alter table public.online_mode_leaderboard enable row level security;
+alter table public.online_player_penalties enable row level security;
 
 drop policy if exists "Signed-in users can read community profiles" on public.profiles;
 create policy "Signed-in users can read community profiles"
@@ -404,7 +662,13 @@ create policy "Users can join online matches"
 drop policy if exists "Users can leave online matches" on public.online_match_players;
 create policy "Users can leave online matches"
     on public.online_match_players for delete to authenticated
-    using (user_id = (select auth.uid()));
+    using (
+        user_id = (select auth.uid())
+        and exists (
+            select 1 from public.online_matches as online_match
+            where online_match.id = match_id and online_match.status = 'waiting'
+        )
+    );
 drop policy if exists "Users can update their ready status" on public.online_match_players;
 create policy "Users can update their ready status"
     on public.online_match_players for update to authenticated
@@ -480,6 +744,9 @@ create policy "Users can update their own player settings"
 drop policy if exists "Anyone can read normal mode leaderboard" on public.normal_mode_leaderboard;
 create policy "Anyone can read normal mode leaderboard"
     on public.normal_mode_leaderboard for select to anon, authenticated using (true);
+drop policy if exists "Anyone can read multiplayer wins" on public.online_mode_leaderboard;
+create policy "Anyone can read multiplayer wins"
+    on public.online_mode_leaderboard for select to anon, authenticated using (true);
 drop policy if exists "Users can create their own leaderboard entry" on public.normal_mode_leaderboard;
 create policy "Users can create their own leaderboard entry"
     on public.normal_mode_leaderboard for insert to authenticated
@@ -496,18 +763,29 @@ grant select, insert on public.community_posts, public.community_messages to aut
 grant select, insert, update on public.player_settings to authenticated;
 grant select on public.normal_mode_leaderboard to anon, authenticated;
 grant insert, update on public.normal_mode_leaderboard to authenticated;
+grant select on public.online_mode_leaderboard to anon, authenticated;
+revoke all on public.online_player_penalties from anon, authenticated;
 grant select, insert, update, delete on public.friend_requests to authenticated;
 grant select, insert, delete on public.player_blocks to authenticated;
 grant select, insert, update on public.online_matches to authenticated;
 grant select, insert, delete on public.online_match_players to authenticated;
 revoke update on public.online_match_players from authenticated;
-grant update (is_ready) on public.online_match_players to authenticated;
+grant update (is_ready, is_alive, stage, game_state) on public.online_match_players to authenticated;
 grant select, insert on public.online_party_invites to authenticated;
 grant update (status) on public.online_party_invites to authenticated;
 grant usage, select on sequence public.online_party_invites_id_seq to authenticated;
 grant usage, select on sequence public.community_posts_id_seq, public.community_messages_id_seq
     to authenticated;
 grant usage, select on sequence public.friend_requests_id_seq to authenticated;
+
+revoke all on function public.get_online_penalty() from public, anon;
+revoke all on function public.abandon_online_match(uuid) from public, anon;
+revoke all on function public.start_online_combat(uuid) from public, anon;
+revoke all on function public.record_online_match_win(uuid) from public, anon;
+grant execute on function public.get_online_penalty() to authenticated;
+grant execute on function public.abandon_online_match(uuid) to authenticated;
+grant execute on function public.start_online_combat(uuid) to authenticated;
+grant execute on function public.record_online_match_win(uuid) to authenticated;
 
 do $$
 begin
@@ -575,6 +853,14 @@ begin
                 and tablename = 'online_party_invites'
         ) then
             execute 'alter publication supabase_realtime add table public.online_party_invites';
+        end if;
+        if not exists (
+            select 1 from pg_publication_tables
+            where pubname = 'supabase_realtime'
+                and schemaname = 'public'
+                and tablename = 'online_mode_leaderboard'
+        ) then
+            execute 'alter publication supabase_realtime add table public.online_mode_leaderboard';
         end if;
     end if;
 end;
