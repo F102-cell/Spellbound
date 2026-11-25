@@ -2,7 +2,9 @@
 
 Play the game here:
 
-https://f102-cell.github.io/Spellbound/game.html?v=1.01&build=ffa-coop
+https://f102-cell.github.io/Spellbound/game.html?v=1.01&build=enemy-guide
+
+The Enemy Guide on the main menu shows each enemy's appearance and attack style.
 
 Online matchmaking, ready-up, private parties, and synchronized PvP require the
 Supabase schema in [`supabase-schema.sql`](./supabase-schema.sql) to be applied

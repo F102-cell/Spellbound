@@ -913,6 +913,9 @@
         let controlsScrollY = 0;
         let controlsScrollDragging = false;
         let controlsScrollDragOffset = 0;
+        let enemyGuideScrollY = 0;
+        let enemyGuideScrollDragging = false;
+        let enemyGuideScrollDragOffset = 0;
         let controlsReturnState = 'MENU';
         let audioReturnState = 'MENU';
 
@@ -3632,6 +3635,8 @@
                     gameState = controlsReturnState;
                 } else if (gameState === 'AUDIO') {
                     gameState = audioReturnState;
+                } else if (gameState === 'ENEMY_GUIDE') {
+                    gameState = 'MENU';
                 } else if (keybinds.fullscreen === keyLower && !document.fullscreenElement) {
                     toggleFullscreen();
                 }
@@ -3687,6 +3692,17 @@
                     ? ((thumbY - layout.track.y) / thumbRange) * layout.maxScroll
                     : 0;
             }
+            if (enemyGuideScrollDragging && mouse.down) {
+                const layout = getEnemyGuideLayout();
+                const thumbRange = layout.track.height - layout.thumbHeight;
+                const thumbY = Math.max(layout.track.y, Math.min(
+                    layout.track.y + thumbRange,
+                    mouse.y - enemyGuideScrollDragOffset
+                ));
+                enemyGuideScrollY = thumbRange > 0
+                    ? ((thumbY - layout.track.y) / thumbRange) * layout.maxScroll
+                    : 0;
+            }
         });
         canvas.addEventListener("mousedown", (e) => {
             const position = getCanvasPosition(e.clientX, e.clientY);
@@ -3727,23 +3743,55 @@
                         : 0;
                 }
             }
+            if (gameState === 'ENEMY_GUIDE') {
+                const layout = getEnemyGuideLayout();
+                if (layout.maxScroll > 0 &&
+                    mouse.x >= layout.track.x && mouse.x <= layout.track.x + layout.track.width &&
+                    mouse.y >= layout.thumbY && mouse.y <= layout.thumbY + layout.thumbHeight) {
+                    enemyGuideScrollDragging = true;
+                    enemyGuideScrollDragOffset = mouse.y - layout.thumbY;
+                } else if (layout.maxScroll > 0 &&
+                    mouse.x >= layout.track.x && mouse.x <= layout.track.x + layout.track.width &&
+                    mouse.y >= layout.track.y && mouse.y <= layout.track.y + layout.track.height) {
+                    const thumbRange = layout.track.height - layout.thumbHeight;
+                    enemyGuideScrollY = thumbRange > 0
+                        ? layout.maxScroll * Math.max(0, Math.min(1,
+                            (mouse.y - layout.track.y - layout.thumbHeight / 2) / thumbRange))
+                        : 0;
+                }
+            }
         });
 
         canvas.addEventListener("mouseup", () => {
             mouse.down = false;
             skillTreeScrollDragging = false;
             controlsScrollDragging = false;
+            enemyGuideScrollDragging = false;
         });
         window.addEventListener("mouseup", () => {
             mouse.down = false;
             skillTreeScrollDragging = false;
             controlsScrollDragging = false;
+            enemyGuideScrollDragging = false;
         });
         canvas.addEventListener("wheel", (e) => {
-            if (gameState !== 'SKILLTREE' && gameState !== 'CONTROLS') return;
+            if (gameState !== 'SKILLTREE' && gameState !== 'CONTROLS' &&
+                gameState !== 'ENEMY_GUIDE') return;
             const position = getCanvasPosition(e.clientX, e.clientY);
             const x = position.x;
             const y = position.y;
+            if (gameState === 'ENEMY_GUIDE') {
+                const layout = getEnemyGuideLayout();
+                if (x >= layout.viewport.x && x <= layout.viewport.x + layout.viewport.width &&
+                    y >= layout.viewport.y && y <= layout.viewport.y + layout.viewport.height) {
+                    e.preventDefault();
+                    enemyGuideScrollY = Math.max(0, Math.min(
+                        layout.maxScroll,
+                        enemyGuideScrollY + e.deltaY
+                    ));
+                }
+                return;
+            }
             if (gameState === 'CONTROLS') {
                 const layout = getControlsMenuLayout();
                 if (x >= layout.viewport.x && x <= layout.viewport.x + layout.viewport.width &&
@@ -3915,6 +3963,26 @@
 
             { hp: 10000, maxHp: 10000, speed: 1.2, radius: 42, color: "#1e289d", type: "Rival Champion", model: "champion" },
             // Dark blue
+        ];
+        const enemyGuideEntries = [
+            { model: "footman", name: "Footman", color: "#dc2626", appearance: "Red tunic, pale face, gray shield, and a short sword.", behavior: "A basic soldier that runs straight at you and attacks up close." },
+            { model: "scout", name: "Scout", color: "#ea580c", appearance: "Small orange runner with a light, angular shape.", behavior: "Very fast and fragile; closes the distance for quick melee hits." },
+            { model: "archer", name: "Archer", color: "#047857", appearance: "Dark teal clothing, green hood, and a curved bow.", behavior: "Keeps its distance and fires quick, light arrows." },
+            { model: "crossbow", name: "Crossbowman", color: "#15803d", appearance: "Green armor with a wooden crossbow and bright bolts.", behavior: "Shoots stronger bolts from farther away than an archer." },
+            { model: "berserker", name: "Berserker", color: "#b91c1c", appearance: "Broad red body with pale horns and raised arms.", behavior: "Charges into close range and deals heavy contact damage." },
+            { model: "knight", name: "Knight", color: "#9ca3af", appearance: "Silver armor, dark red shield, and a red plume.", behavior: "A tough melee fighter whose close-range strikes hit hard." },
+            { model: "catapult", name: "Catapult", color: "#a16207", appearance: "Brown wooden frame and raised throwing arm over dark wheels.", behavior: "Lobs slow stones that explode over a wide area." },
+            { model: "siege", name: "Siege Engine", color: "#1e40af", appearance: "Blue wheeled platform with a tall, pale launcher.", behavior: "Fires heavy splash-damage shots from long range." },
+            { model: "warMachine", name: "War Machine", color: "#4b5563", appearance: "Large gray-blue armored vehicle with dark wheels.", behavior: "Slow and sturdy; launches especially large area blasts." },
+            { model: "juggernaut", name: "Juggernaut", color: "#cbd5e1", appearance: "Huge steel-gray armor with a dark-blue visor and pale side spikes.", behavior: "Moves slowly but has a lot of health and punishing contact attacks." },
+            { model: "gasser", name: "Gasser", color: "#b2e43a", appearance: "Round lime-green creature with dark mask and glowing eyes.", behavior: "Throws gas canisters that burst into lingering danger zones." },
+            { model: "smurf", name: "Smurf", color: "#12bff3", appearance: "Tiny bright-cyan creature wearing a white floppy hat.", behavior: "Darts around quickly and fires blue shots from a distance." },
+            { model: "troll", name: "Troll", color: "#513c3a", appearance: "Large brown creature with pointed ears and a wooden club.", behavior: "A tough pursuer that chases you and attacks at close range." },
+            { model: "alien", name: "Alien", color: "#32f64f", appearance: "Bright-green, big-headed creature with dark eyes and antennae.", behavior: "A fast, high-health melee enemy that rushes directly at you." },
+            { model: "thanos", name: "Thanos", color: "#7625c9", appearance: "Massive purple figure with a gold helmet and colored gems.", behavior: "A very durable melee foe that hunts you down and deals heavy contact damage." },
+            { model: "ultron", name: "Ultron", color: "#636363", appearance: "Large silver robot with a dark face and glowing red eyes.", behavior: "A fast, heavily armored pursuer with dangerous contact damage." },
+            { model: "champion", name: "Champion", color: "#1e289d", appearance: "Huge dark-blue warrior with a gold crown and shoulder guard.", behavior: "Fires powerful golden shots that explode over a wide area; dangerous up close too." },
+            { model: "king", name: "Enemy King", color: "#7e22ce", appearance: "Purple-robed ruler with a pale face and tall gold crown.", behavior: "The final boss; repeatedly summons extra enemies into the fight." }
         ];
         // Arcade spawn chance weights are relative; increase a value to make that enemy more common.
         const arcadeEnemySpawnChances = {
@@ -5646,11 +5714,12 @@
             community: { x: 655, y: 400, w: 230, h: 125, radius: 12 },
             account: { x: 900, y: 400, w: 230, h: 125, radius: 12 },
             multiplayer: { x: 1160, y: 250, w: 180, h: 275, radius: 18 },
-            share: { x: 655, y: 550, w: 230, h: 54, radius: 12 }
+            share: { x: 655, y: 550, w: 230, h: 54, radius: 12 },
+            enemyGuide: { x: 900, y: 550, w: 230, h: 54, radius: 12 }
         };
 
         const GAME_VERSION = "1.01";
-        const GAME_BUILD = "ffa-coop";
+        const GAME_BUILD = "enemy-guide";
         let shareStatus = "";
         let shareStatusExpiresAt = 0;
 
@@ -6045,6 +6114,12 @@
             const share = homeMenuLayout.share;
             drawButton(share.x, share.y, share.w, share.h, "#166534", "#fff",
                 "SHARE GAME", shareSpellbound, share.radius);
+            const enemyGuide = homeMenuLayout.enemyGuide;
+            drawButton(enemyGuide.x, enemyGuide.y, enemyGuide.w, enemyGuide.h, "#5c4033", "#fff",
+                "ENEMY GUIDE", () => {
+                    enemyGuideScrollY = 0;
+                    gameState = 'ENEMY_GUIDE';
+                }, enemyGuide.radius);
             if (shareStatus && performance.now() < shareStatusExpiresAt) {
                 ctx.fillStyle = "rgba(17, 24, 39, 0.95)";
                 ctx.fillRect(canvas.width / 2 - 275, 620, 550, 48);
@@ -6058,6 +6133,127 @@
                 ? "Arcade: king every 6 minutes; champion every 3, except with the king."
                 : "Normal: survive 20 waves; a champion arrives every 10th round.", canvas.width / 2, 650);
             ctx.fillText(`Difficulty: ${difficulty.toUpperCase()}`, canvas.width / 2, 675);
+        }
+
+        function getEnemyGuideLayout() {
+            const viewport = { x: 150, y: 155, width: 1200, height: 610 };
+            const cardWidth = 588;
+            const cardHeight = 120;
+            const columnGap = 16;
+            const rowGap = 12;
+            const rowHeight = cardHeight + rowGap;
+            const contentHeight = Math.ceil(enemyGuideEntries.length / 2) * rowHeight - rowGap;
+            const maxScroll = Math.max(0, contentHeight - viewport.height);
+            enemyGuideScrollY = Math.max(0, Math.min(maxScroll, enemyGuideScrollY));
+            const track = { x: viewport.x + viewport.width + 12, y: viewport.y, width: 8, height: viewport.height };
+            const thumbHeight = Math.min(track.height,
+                Math.max(36, track.height * viewport.height / contentHeight));
+            const thumbY = track.y + (maxScroll > 0
+                ? (enemyGuideScrollY / maxScroll) * (track.height - thumbHeight)
+                : 0);
+            return { viewport, cardWidth, cardHeight, columnGap, rowGap, rowHeight,
+                contentHeight, maxScroll, track, thumbHeight, thumbY };
+        }
+
+        function drawEnemyGuide() {
+            ctx.fillStyle = "#09090e";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.textAlign = "center";
+            ctx.fillStyle = "#d4af37";
+            ctx.font = "bold 36px Georgia, serif";
+            ctx.fillText("ENEMY FIELD GUIDE", canvas.width / 2, 65);
+            ctx.fillStyle = "#cbd5e1";
+            ctx.font = "15px Georgia, serif";
+            ctx.fillText("See their colors and silhouettes, and learn how they attack.", canvas.width / 2, 105);
+
+            const layout = getEnemyGuideLayout();
+            ctx.fillStyle = "#171622";
+            ctx.fillRect(layout.viewport.x, layout.viewport.y, layout.viewport.width, layout.viewport.height);
+            ctx.strokeStyle = "#d4af37";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(layout.viewport.x, layout.viewport.y, layout.viewport.width, layout.viewport.height);
+
+            const drawDescription = (text, x, y, maxWidth) => {
+                const words = text.split(/\s+/);
+                const lines = [];
+                let line = "";
+                words.forEach(word => {
+                    const candidate = line ? `${line} ${word}` : word;
+                    if (line && ctx.measureText(candidate).width > maxWidth) {
+                        lines.push(line);
+                        line = word;
+                    } else {
+                        line = candidate;
+                    }
+                });
+                if (line) lines.push(line);
+                lines.slice(0, 2).forEach((descriptionLine, lineIndex) => {
+                    ctx.fillText(descriptionLine, x, y + lineIndex * 15);
+                });
+            };
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(layout.viewport.x, layout.viewport.y,
+                layout.viewport.width, layout.viewport.height);
+            ctx.clip();
+            enemyGuideEntries.forEach((entry, index) => {
+                const column = index % 2;
+                const row = Math.floor(index / 2);
+                const cardX = layout.viewport.x + column * (layout.cardWidth + layout.columnGap);
+                const cardY = layout.viewport.y + row * layout.rowHeight - enemyGuideScrollY;
+                if (cardY + layout.cardHeight < layout.viewport.y ||
+                    cardY > layout.viewport.y + layout.viewport.height) return;
+
+                ctx.fillStyle = "#221e1a";
+                ctx.fillRect(cardX, cardY, layout.cardWidth, layout.cardHeight);
+                ctx.strokeStyle = "#6b5425";
+                ctx.lineWidth = 1;
+                ctx.strokeRect(cardX, cardY, layout.cardWidth, layout.cardHeight);
+
+                const preview = Object.assign(Object.create(RivalSoldier.prototype), {
+                    x: cardX + 42,
+                    y: cardY + 68,
+                    radius: 14,
+                    color: entry.color,
+                    model: entry.model,
+                    hp: 1,
+                    maxHp: 1
+                });
+                preview.draw();
+
+                ctx.textAlign = "left";
+                ctx.fillStyle = "#fef3c7";
+                ctx.font = "bold 16px Georgia, serif";
+                ctx.fillText(entry.name, cardX + 78, cardY + 24);
+                ctx.fillStyle = entry.color;
+                ctx.font = "bold 12px Georgia, serif";
+                ctx.fillText("LOOKS", cardX + 78, cardY + 46);
+                ctx.fillStyle = "#cbd5e1";
+                ctx.font = "13px Georgia, serif";
+                drawDescription(entry.appearance, cardX + 128, cardY + 46,
+                    layout.cardWidth - 144);
+                ctx.fillStyle = "#fbbf24";
+                ctx.font = "bold 12px Georgia, serif";
+                ctx.fillText("DOES", cardX + 78, cardY + 77);
+                ctx.fillStyle = "#cbd5e1";
+                ctx.font = "13px Georgia, serif";
+                drawDescription(entry.behavior, cardX + 128, cardY + 77,
+                    layout.cardWidth - 144);
+            });
+            ctx.restore();
+
+            if (layout.maxScroll > 0) {
+                ctx.fillStyle = "#27272a";
+                ctx.fillRect(layout.track.x, layout.track.y, layout.track.width, layout.track.height);
+                ctx.fillStyle = "#d4af37";
+                ctx.fillRect(layout.track.x, layout.thumbY,
+                    layout.track.width, layout.thumbHeight);
+            }
+
+            drawButton(canvas.width / 2 - 100, canvas.height - 65, 200, 42,
+                "#5c4033", "#fff", "BACK TO MENU", () => gameState = 'MENU');
         }
 
         function drawAudioSettings() {
@@ -6583,6 +6779,8 @@
             if (gameState === 'MENU') {
                 updateMenuDemo(deltaTime);
                 drawMenu();
+            } else if (gameState === 'ENEMY_GUIDE') {
+                drawEnemyGuide();
             } else if (gameState === 'MULTIPLAYER') {
                 ctx.fillStyle = "#09090e";
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
