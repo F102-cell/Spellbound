@@ -1,8 +1,6 @@
-# Spellbound: King's Realm
-
 Play the game here:
 
-https://f102-cell.github.io/Spellbound/game.html?v=1.01&build=enemy-guide
+https://f102-cell.github.io/Spellbound/game.html?v=2.1&build=enemy-guide
 
 The Enemy Guide on the main menu shows each enemy's appearance and attack style.
 
